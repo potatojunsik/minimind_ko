@@ -1,0 +1,33 @@
+# 가상환경
+.venv/
+
+# 원본 MiniMind 저장소 (README의 커밋 해시로 다시 받는다)
+minimind/
+
+# 데이터셋, 모델 가중치, 학습 산출물 (용량이 커서 git에 올리지 않음)
+data/
+*.jsonl
+*.parquet
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+out*/
+checkpoints/
+
+# Python 캐시
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# 실험 추적 도구 로컬 기록 (--use_wandb 사용 시 생성)
+wandb/
+swanlog/
+
+# 에디터 / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
