@@ -54,7 +54,7 @@ Each model was trained only once, with seed 42. The 95% intervals reflect only t
 
 At 1M chunks, the validation BPB was 1.0097 for the 6,400 model and 1.0080 for the 16,000 model, about 0.17% lower relative to 6,400. Tokenizing the same training text, the 16,000 tokenizer produced 12.8% fewer tokens. In this training, each chunk was placed in its own 512-token slot and processed with the same batch size, so both models trained for the same number of steps; across the four measured pairs, each step took about 9% longer on average for the 16,000 model. Details are in [docs/06](docs/06_데이터양_비교.md#실제로-얼마나-다른가) (Korean).
 
-However, a reference evaluation of these two Wikipedia-only models on Korean chat Q&A favored 6,400 (answer BPB Δ: −0.0099 for the text only, −0.0576 including the end-of-answer token). The decision was not changed, and the same evaluation will be repeated after SFT ([docs/06, next steps](docs/06_데이터양_비교.md#다음-단계), Korean).
+However, a reference evaluation of these two Wikipedia-only models on Korean chat Q&A favored 6,400 (answer BPB Δ: −0.0099 for the text only, −0.0576 including the end-of-answer token). The decision was not changed. After SFT on the same chat data, BPB slightly favored 6,400 while a blind generation comparison judged by a single LLM (Claude) favored 16,000, so 16,000 was kept under the rule set before the results ([docs/07](docs/07_대화_SFT_비교.md), Korean).
 
 * Decision rule: I set the decision rule shortly after training began on the 6,400-vocabulary model, before seeing either model’s results at one million chunks, as “select 16,000 if the lower bound of the 95% interval of Δ(1M) is above 0, otherwise select 6,400 (decided on unrounded values)”. The decision process up to 400k, BPC, and per-document win rates are in [docs/06](docs/06_데이터양_비교.md) (Korean).
 * The 95% intervals come from 10,000 paired bootstrap re-samples of Wikipedia documents, applying the same held-out documents to both models.
@@ -130,6 +130,7 @@ Each step is recorded in [docs/](docs) (Korean) with commands, results, lessons 
 | 3 | Does loss go down when pretraining from scratch with our own tokenizer? | ✅ vocab 16,000, 100k Wikipedia chunks, loss 8.50 → 4.45 | [docs/04](docs/04_한국어_사전학습.md) (Korean) |
 | 3-1 | Does 16,000, which uses fewer tokens, predict better? (100k Wikipedia chunks) | ✅ Contrary to the expectation, 6,400 was better | [docs/05](docs/05_vocab_비교.md) (Korean) |
 | 3-2 | Does the result flip with more data? (50k to 1M chunks) | ✅ 16,000 led at 1M and was selected under the rule set before seeing the 1M results | [docs/06](docs/06_데이터양_비교.md) (Korean) |
+| 3-3 | After SFT on the same chat data, does 6,400 still give better answers? | ✅ BPB slightly favored 6,400, the blind generation comparison (one LLM judge) favored 16,000 (62 vs 41) → 16,000 kept under the rule set before the results | [docs/07](docs/07_대화_SFT_비교.md) (Korean) |
 | 4 | Final pretraining with the selected tokenizer, then Korean chat training (SFT) | ⏳ Planned | |
 | 5 | (Optional) LoRA, DPO | ⏳ Planned | |
 
@@ -212,7 +213,9 @@ Every script has usage instructions in its top docstring (Korean). The working d
 | [analyze_scale_results.py](scripts/analyze_scale_results.py) | `minimind_ko` | Reproduces the decision, then prints per-token loss, the size of the 1M Δ, Δ under other calculations, and Δ by text feature (exploratory) (docs/06) |
 | [plot_scale_details.py](scripts/plot_scale_details.py) | `minimind_ko` | Saves the four supporting figures in docs/06 from the `--out` JSON of the three scripts above |
 | [prepare_chat_eval.py](scripts/prepare_chat_eval.py) | `minimind_ko` | Cleans the chat data (songys/Chatbot_data) and splits it by group into held-out pairs and SFT candidates (docs/06) |
-| [eval_chat_bpb.py](scripts/eval_chat_bpb.py) | `minimind_ko` | Compares the two models by answer BPB, with the question given only as context (docs/06) |
+| [train_sft_ko.py](scripts/train_sft_ko.py) | `minimind_ko` | SFT of the Korean models in a fixed chat format, reusing the original SFT training loop (docs/07) |
+| [blind_chat_eval.py](scripts/blind_chat_eval.py) | `minimind_ko` | Blind generation comparison: fixing items, generating answers and the sheet, scoring and the decision (docs/07) |
+| [eval_chat_bpb.py](scripts/eval_chat_bpb.py) | `minimind_ko` | Compares the two models by answer BPB, with the question given only as context (docs/06). `--format chat` uses the same chat format as SFT (docs/07) |
 
 </details>
 
@@ -293,7 +296,7 @@ This repository is a personal study log based on [jingyaogong/minimind](https://
 | Language | Mainly Chinese and English | Korean only |
 | Tokenizer | vocab 6,400, trained on the original data | vocab 6,400 / 16,000, trained here on Korean Wikipedia |
 | Training data | Datasets released by the original author | Korean Wikipedia (preprocessed here) |
-| Scope | The whole pipeline from pretraining to SFT, LoRA, DPO and more | Pretraining and the vocab comparison so far (SFT planned) |
+| Scope | The whole pipeline from pretraining to SFT, LoRA, DPO and more | Pretraining, the vocab comparison and a comparison chat SFT so far (final SFT planned) |
 
 What comes from, or depends on, the original:
 

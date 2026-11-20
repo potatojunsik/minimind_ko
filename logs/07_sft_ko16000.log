@@ -1,0 +1,43 @@
+tokenizer: tokenizers/ko_16000 | vocab_size: 16000 | init: out_scale/ko16000_n1000000/pretrain_ko16000_768.pth
+학습 쌍 9,749개, 가장 긴 쌍 66토큰 (max_seq_len 128)
+첫 배치 채점 위치 확인: 16쌍 모두 답 본문 + <|im_end|> + 줄바꿈만 채점. 예: '친구 몇 명쯤 필요한가' → '한 명만 있어도 충분해요.'
+Epoch:[1/3](50/610), loss: 3.3244, logits_loss: 3.3244, aux_loss: 0.0000, lr: 0.00000998, epoch_time: 1.0min
+Epoch:[1/3](100/610), loss: 2.6066, logits_loss: 2.6066, aux_loss: 0.0000, lr: 0.00000993, epoch_time: 1.0min
+Epoch:[1/3](150/610), loss: 2.6600, logits_loss: 2.6600, aux_loss: 0.0000, lr: 0.00000985, epoch_time: 0.0min
+Epoch:[1/3](200/610), loss: 2.4712, logits_loss: 2.4712, aux_loss: 0.0000, lr: 0.00000974, epoch_time: 0.0min
+Epoch:[1/3](250/610), loss: 2.5757, logits_loss: 2.5757, aux_loss: 0.0000, lr: 0.00000959, epoch_time: 0.0min
+Epoch:[1/3](300/610), loss: 2.4803, logits_loss: 2.4803, aux_loss: 0.0000, lr: 0.00000942, epoch_time: 0.0min
+Epoch:[1/3](350/610), loss: 2.3146, logits_loss: 2.3146, aux_loss: 0.0000, lr: 0.00000921, epoch_time: 0.0min
+Epoch:[1/3](400/610), loss: 2.5849, logits_loss: 2.5849, aux_loss: 0.0000, lr: 0.00000898, epoch_time: 0.0min
+Epoch:[1/3](450/610), loss: 2.4467, logits_loss: 2.4467, aux_loss: 0.0000, lr: 0.00000872, epoch_time: 0.0min
+Epoch:[1/3](500/610), loss: 2.3798, logits_loss: 2.3798, aux_loss: 0.0000, lr: 0.00000844, epoch_time: 0.0min
+Epoch:[1/3](550/610), loss: 2.6372, logits_loss: 2.6372, aux_loss: 0.0000, lr: 0.00000814, epoch_time: 0.0min
+Epoch:[1/3](600/610), loss: 2.4393, logits_loss: 2.4393, aux_loss: 0.0000, lr: 0.00000782, epoch_time: 0.0min
+Epoch:[1/3](610/610), loss: 2.8571, logits_loss: 2.8571, aux_loss: 0.0000, lr: 0.00000775, epoch_time: 0.0min
+Epoch:[2/3](50/610), loss: 2.1419, logits_loss: 2.1419, aux_loss: 0.0000, lr: 0.00000741, epoch_time: 1.0min
+Epoch:[2/3](100/610), loss: 2.5931, logits_loss: 2.5931, aux_loss: 0.0000, lr: 0.00000705, epoch_time: 1.0min
+Epoch:[2/3](150/610), loss: 2.3600, logits_loss: 2.3600, aux_loss: 0.0000, lr: 0.00000668, epoch_time: 0.0min
+Epoch:[2/3](200/610), loss: 2.3793, logits_loss: 2.3793, aux_loss: 0.0000, lr: 0.00000631, epoch_time: 0.0min
+Epoch:[2/3](250/610), loss: 1.9555, logits_loss: 1.9555, aux_loss: 0.0000, lr: 0.00000592, epoch_time: 0.0min
+Epoch:[2/3](300/610), loss: 1.9967, logits_loss: 1.9967, aux_loss: 0.0000, lr: 0.00000554, epoch_time: 0.0min
+Epoch:[2/3](350/610), loss: 1.9234, logits_loss: 1.9234, aux_loss: 0.0000, lr: 0.00000515, epoch_time: 0.0min
+Epoch:[2/3](400/610), loss: 2.1509, logits_loss: 2.1509, aux_loss: 0.0000, lr: 0.00000477, epoch_time: 0.0min
+Epoch:[2/3](450/610), loss: 2.1544, logits_loss: 2.1544, aux_loss: 0.0000, lr: 0.00000439, epoch_time: 0.0min
+Epoch:[2/3](500/610), loss: 1.9894, logits_loss: 1.9894, aux_loss: 0.0000, lr: 0.00000402, epoch_time: 0.0min
+Epoch:[2/3](550/610), loss: 2.1204, logits_loss: 2.1204, aux_loss: 0.0000, lr: 0.00000366, epoch_time: 0.0min
+Epoch:[2/3](600/610), loss: 2.1980, logits_loss: 2.1980, aux_loss: 0.0000, lr: 0.00000332, epoch_time: 0.0min
+Epoch:[2/3](610/610), loss: 2.5084, logits_loss: 2.5084, aux_loss: 0.0000, lr: 0.00000325, epoch_time: 0.0min
+Epoch:[3/3](50/610), loss: 2.3532, logits_loss: 2.3532, aux_loss: 0.0000, lr: 0.00000292, epoch_time: 1.0min
+Epoch:[3/3](100/610), loss: 1.7317, logits_loss: 1.7317, aux_loss: 0.0000, lr: 0.00000262, epoch_time: 1.0min
+Epoch:[3/3](150/610), loss: 2.1208, logits_loss: 2.1208, aux_loss: 0.0000, lr: 0.00000233, epoch_time: 0.0min
+Epoch:[3/3](200/610), loss: 2.2506, logits_loss: 2.2506, aux_loss: 0.0000, lr: 0.00000207, epoch_time: 0.0min
+Epoch:[3/3](250/610), loss: 2.2140, logits_loss: 2.2140, aux_loss: 0.0000, lr: 0.00000183, epoch_time: 0.0min
+Epoch:[3/3](300/610), loss: 1.8704, logits_loss: 1.8704, aux_loss: 0.0000, lr: 0.00000162, epoch_time: 0.0min
+Epoch:[3/3](350/610), loss: 1.7566, logits_loss: 1.7566, aux_loss: 0.0000, lr: 0.00000144, epoch_time: 0.0min
+Epoch:[3/3](400/610), loss: 2.3059, logits_loss: 2.3059, aux_loss: 0.0000, lr: 0.00000129, epoch_time: 0.0min
+Epoch:[3/3](450/610), loss: 1.7115, logits_loss: 1.7115, aux_loss: 0.0000, lr: 0.00000117, epoch_time: 0.0min
+Epoch:[3/3](500/610), loss: 2.1331, logits_loss: 2.1331, aux_loss: 0.0000, lr: 0.00000108, epoch_time: 0.0min
+Epoch:[3/3](550/610), loss: 2.2153, logits_loss: 2.2153, aux_loss: 0.0000, lr: 0.00000102, epoch_time: 0.0min
+Epoch:[3/3](600/610), loss: 2.0077, logits_loss: 2.0077, aux_loss: 0.0000, lr: 0.00000100, epoch_time: 0.0min
+Epoch:[3/3](610/610), loss: 1.7276, logits_loss: 1.7276, aux_loss: 0.0000, lr: 0.00000100, epoch_time: 0.0min
+완료: D:\minimind_ko\out_sft\sft_ko16000_768.pth

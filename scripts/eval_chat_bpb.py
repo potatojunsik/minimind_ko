@@ -1,7 +1,8 @@
 """
-위키로만 사전학습한 모델이 한국어 대화체 답변을 얼마나 잘 예측하는지 BPB로 재고, 두 모델을 비교한다.
+사전학습 모델(또는 SFT 모델)이 한국어 대화체 답변을 얼마나 잘 예측하는지 BPB로 재고, 두 모델을 비교한다.
 
 평가 규칙 (eval_bpc.py와 같은 원칙, 두 토크나이저에 똑같이 적용):
+  - 입력 형식은 두 가지다. plain(기본, 아래 설명)과 chat(--format chat, SFT와 같은 대화 형식, build_chat_ids).
   - 입력: [bos] + 질문 토큰 + 줄바꿈 토큰 + 답 토큰 + [eos]. 질문·줄바꿈·답을 따로 토큰화해 이어 붙인다
     (한 번에 토큰화하면 경계의 글자가 한 토큰으로 합쳐져 답 토큰만 골라낼 수 없다).
   - 채점: 답 토큰 전부 + eos 1개. 질문은 문맥으로만 쓰고 채점하지 않는다. eos 포함 값과 텍스트만(eos 제외) 값을 함께 낸다.
@@ -11,13 +12,16 @@
   - fp32, 512토큰 창(eval_bpc.WINDOW). 대화 쌍은 짧아서 넘지 않아야 정상이고, 넘으면 멈춘다.
   - 두 모델 비교: Δ = BPB(작은 vocab) − BPB(큰 vocab), 양수면 큰 vocab이 앞섬.
     95% 구간은 prepare_chat_eval.py가 만든 묶음(같은 질문이나 같은 답을 공유하는 쌍) 단위 쌍 부트스트랩
-    (10,000회, seed 0, decide_vocab.py와 같은 함수). 이 평가는 판정에 쓰지 않는 참고값이다.
+    (10,000회, seed 0, decide_vocab.py와 같은 함수). plain 결과는 판정에 쓰지 않는 참고값이고(docs/06), chat 형식의 SFT 후 결과는 docs/07 조건 1의 판정에 쓴다.
 
 사용법 (minimind_ko 폴더에서 실행, 먼저 prepare_chat_eval.py로 data/chat/eval_pairs.jsonl을 만든다):
     .venv\\Scripts\\python.exe -X utf8 scripts\\eval_chat_bpb.py ^
         --model tokenizers/ko_6400 out_scale/ko6400_n1000000/pretrain_ko6400_768.pth ^
         --model tokenizers/ko_16000 out_scale/ko16000_n1000000/pretrain_ko16000_768.pth
     (저장된 결과만 다시 비교: --compare data/chat/chat_eval_ko6400.json data/chat/chat_eval_ko16000.json)
+    대화 형식(docs/07)은 --format chat과 --tag를 함께 준다. 예: SFT 후 모델
+    .venv\\Scripts\\python.exe -X utf8 scripts\\eval_chat_bpb.py --format chat --tag chat_sft ^
+        --model tokenizers/ko_6400 out_sft/sft_ko6400_768.pth --model tokenizers/ko_16000 out_sft/sft_ko16000_768.pth
 """
 import argparse
 import json
@@ -51,6 +55,19 @@ def build_ids(tokenizer, q, a, sep=SEP):
     return ids, 1 + len(q_ids) + len(sep_ids)
 
 
+def build_chat_ids(tokenizer, q, a):
+    """SFT와 같은 대화 형식(train_sft_ko.chat_text): user 질문 → assistant 답 → <|im_end|>.
+    형식 앞부분과 답을 따로 토큰화해 이어 붙인다. 형식 끝의 줄바꿈 뒤라서 한 번에 토큰화한 결과와 같다(테스트로 확인).
+    학습 때 <|im_end|> 뒤에 붙는 줄바꿈은 답의 일부가 아니라 평가하지 않는다."""
+    prefix = f"<|im_start|>user\n{q}<|im_end|>\n<|im_start|>assistant\n"
+    p_ids = tokenizer(prefix, add_special_tokens=False).input_ids
+    a_ids = tokenizer(a, add_special_tokens=False).input_ids
+    return p_ids + a_ids + [tokenizer.eos_token_id], len(p_ids)
+
+
+BUILDERS = {"plain": build_ids, "chat": build_chat_ids}
+
+
 @torch.no_grad()
 def score_answer(model, ids, answer_start, device):
     """답 토큰과 eos의 NLL(nats) 목록. 위치 t의 토큰은 위치 t-1의 출력으로 예측하므로 nll[answer_start-1:]이 답 몫이다."""
@@ -77,12 +94,13 @@ def pair_row(pair, nll):
             "nll": sum(nll), "nll_eos": nll[-1]}
 
 
-def evaluate(tokenizer_dir, weight, pairs, device):
+def evaluate(tokenizer_dir, weight, pairs, device, fmt="plain"):
     tokenizer, model = load_model(tokenizer_dir, weight, device)
+    builder = BUILDERS[fmt]
     rows, q_tokens, a_tokens, max_len = [], [], [], 0
     t0 = time.time()
     for p in pairs:
-        ids, start = build_ids(tokenizer, p["q"], p["a"])
+        ids, start = builder(tokenizer, p["q"], p["a"])
         nll = score_answer(model, ids, start, device)
         max_len = max(max_len, len(ids))
         q_tokens.extend(tokenizer(p["q"], add_special_tokens=False).input_ids)
@@ -97,12 +115,14 @@ def evaluate(tokenizer_dir, weight, pairs, device):
         "max_ids_len": max_len,
     }
     print(f"  {tokenizer_dir}: {len(pairs)}쌍, {time.time() - t0:.0f}s, 가장 긴 입력 {max_len}토큰")
-    return {"tokenizer": tokenizer_dir, "vocab": len(tokenizer), "weight": weight,
+    return {"tokenizer": tokenizer_dir, "vocab": len(tokenizer), "weight": weight, "format": fmt,
             "sha256": eval_sha256(pairs), "pairs": rows, "tokenizer_stats": stats}
 
 
 def check_same_eval(a, b):
-    """두 결과가 같은 평가 쌍을 같은 순서로 봤는지 확인한다. 다르면 비교하지 않는다."""
+    """두 결과가 같은 평가 쌍을 같은 순서·같은 입력 형식으로 봤는지 확인한다. 다르면 비교하지 않는다."""
+    if a.get("format", "plain") != b.get("format", "plain"):
+        raise SystemExit(f"입력 형식이 다르다: {a.get('format', 'plain')} vs {b.get('format', 'plain')}")
     if a["sha256"] != b["sha256"]:
         raise SystemExit(f"평가 텍스트 sha256이 다르다: {a['sha256']} vs {b['sha256']}")
     if [p["group"] for p in a["pairs"]] != [p["group"] for p in b["pairs"]]:
@@ -159,8 +179,11 @@ def compare(res_small, res_large, rounds, seed):
         idx = [i for i, p in enumerate(a) if p["label"] == label]
         out["by_label_text_only"][label] = dict(pairs=len(idx), **paired_delta(
             [ta[i] for i in idx], [tb[i] for i in idx], [groups[i] for i in idx], rounds, seed))
+    out["format"] = res_small.get("format", "plain")
+    out["weights"] = {str(vs): res_small.get("weight", ""), str(vl): res_large.get("weight", "")}
     wiki = os.path.join(ROOT, WIKI_DECISION)
-    if os.path.exists(wiki):
+    # 위키 BPB는 사전학습 100만 모델의 값이라, 같은 모델을 평문 형식으로 잰 비교(docs/06)에만 참고로 붙인다
+    if out["format"] == "plain" and os.path.exists(wiki):
         with open(wiki, encoding="utf-8") as f:
             size = json.load(f).get("sizes", {}).get("1000000", {})
         if size.get(f"bpb_{vs}") is not None and size.get(f"bpb_{vl}") is not None:
@@ -205,16 +228,26 @@ def main():
     p.add_argument("--rounds", type=int, default=BOOT_ROUNDS)
     p.add_argument("--seed", type=int, default=BOOT_SEED)
     p.add_argument("--device", default="cuda:0" if torch.cuda.is_available() else "cpu")
+    p.add_argument("--format", choices=sorted(BUILDERS), default="plain",
+                   help="plain: [bos] 질문 줄바꿈 답 [eos] / chat: SFT와 같은 대화 형식")
+    p.add_argument("--tag", default="", help="결과 파일 이름에 붙일 이름 (예: chat_pre, chat_sft)")
     args = p.parse_args()
+    suffix = f"_{args.tag}" if args.tag else ""
 
     if args.compare and args.model:
         raise SystemExit("--model과 --compare는 함께 쓰지 않는다")
+    # 대화 형식 결과가 tag 없이 저장되면 평문 결과(docs/06) 파일 이름과 겹쳐 덮어쓴다
+    no_tag = "대화 형식 결과는 --tag로 이름을 붙인다(평문 결과 파일 chat_eval_ko*.json, chat_compare.json을 덮어쓰지 않게)"
+    if args.model and args.format != "plain" and not args.tag:
+        raise SystemExit(no_tag)
     os.makedirs(os.path.join(ROOT, args.out_dir), exist_ok=True)
     if args.compare:
         results = []
         for path in args.compare:
             with open(os.path.join(ROOT, path), encoding="utf-8") as f:
                 results.append(json.load(f))
+        if results[0].get("format", "plain") != "plain" and not args.tag:
+            raise SystemExit(no_tag)
     else:
         if len(args.model) != 2:
             raise SystemExit("--model을 두 번(토크나이저 폴더, 가중치) 주거나 --compare를 쓴다")
@@ -222,15 +255,16 @@ def main():
             pairs = [json.loads(line) for line in f]
         results = []
         for tokenizer_dir, weight in args.model:
-            res = evaluate(tokenizer_dir, weight, pairs, args.device)
-            path = os.path.join(ROOT, args.out_dir, f"chat_eval_ko{res['vocab']}.json")
+            res = evaluate(tokenizer_dir, weight, pairs, args.device, args.format)
+            path = os.path.join(ROOT, args.out_dir, f"chat_eval{suffix}_ko{res['vocab']}.json")
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(res, f, ensure_ascii=False)
             print(f"  저장: {path}")
             results.append(res)
     results.sort(key=lambda r: r["vocab"])
     c = compare(results[0], results[1], args.rounds, args.seed)
-    with open(os.path.join(ROOT, args.out_dir, "chat_compare.json"), "w", encoding="utf-8") as f:
+    c["tag"] = args.tag
+    with open(os.path.join(ROOT, args.out_dir, f"chat_compare{suffix}.json"), "w", encoding="utf-8") as f:
         json.dump(c, f, ensure_ascii=False, indent=1)
     report(c)
 
