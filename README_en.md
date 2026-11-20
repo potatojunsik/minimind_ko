@@ -54,6 +54,8 @@ Each model was trained only once, with seed 42. The 95% intervals reflect only t
 
 At 1M chunks, the validation BPB was 1.0097 for the 6,400 model and 1.0080 for the 16,000 model, about 0.17% lower relative to 6,400. Tokenizing the same training text, the 16,000 tokenizer produced 12.8% fewer tokens. In this training, each chunk was placed in its own 512-token slot and processed with the same batch size, so both models trained for the same number of steps; across the four measured pairs, each step took about 9% longer on average for the 16,000 model. Details are in [docs/06](docs/06_데이터양_비교.md#실제로-얼마나-다른가) (Korean).
 
+However, a reference evaluation of these two Wikipedia-only models on Korean chat Q&A favored 6,400 (answer BPB Δ: −0.0099 for the text only, −0.0576 including the end-of-answer token). The decision was not changed, and the same evaluation will be repeated after SFT ([docs/06, next steps](docs/06_데이터양_비교.md#다음-단계), Korean).
+
 * Decision rule: I set the decision rule shortly after training began on the 6,400-vocabulary model, before seeing either model’s results at one million chunks, as “select 16,000 if the lower bound of the 95% interval of Δ(1M) is above 0, otherwise select 6,400 (decided on unrounded values)”. The decision process up to 400k, BPC, and per-document win rates are in [docs/06](docs/06_데이터양_비교.md) (Korean).
 * The 95% intervals come from 10,000 paired bootstrap re-samples of Wikipedia documents, applying the same held-out documents to both models.
 
@@ -209,6 +211,8 @@ Every script has usage instructions in its top docstring (Korean). The working d
 | [scale_costs.py](scripts/scale_costs.py) | `minimind_ko` | Prints the parameter breakdown, seconds per training step per size, and 1M loss averages by range. `--bench` measures GPU generation speed and memory (docs/06) |
 | [analyze_scale_results.py](scripts/analyze_scale_results.py) | `minimind_ko` | Reproduces the decision, then prints per-token loss, the size of the 1M Δ, Δ under other calculations, and Δ by text feature (exploratory) (docs/06) |
 | [plot_scale_details.py](scripts/plot_scale_details.py) | `minimind_ko` | Saves the four supporting figures in docs/06 from the `--out` JSON of the three scripts above |
+| [prepare_chat_eval.py](scripts/prepare_chat_eval.py) | `minimind_ko` | Cleans the chat data (songys/Chatbot_data) and splits it by group into held-out pairs and SFT candidates (docs/06) |
+| [eval_chat_bpb.py](scripts/eval_chat_bpb.py) | `minimind_ko` | Compares the two models by answer BPB, with the question given only as context (docs/06) |
 
 </details>
 

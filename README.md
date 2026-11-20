@@ -54,6 +54,8 @@ BPB(bits per byte)는 검증 글을 예측하는 데 든 UTF-8 바이트당 평�
 
 100만 조각에서 검증 BPB는 6,400 모델이 1.0097, 16,000 모델이 1.0080이었습니다. 6,400을 기준으로 약 0.17% 낮은 값입니다. 같은 학습 원문을 토큰으로 나누면 16,000 쪽의 토큰 수가 12.8% 적었습니다. 이번 학습은 조각 하나를 512칸에 넣고 같은 배치 크기로 처리해 두 모델의 학습 스텝 수가 같았고, 스텝당 시간은 측정한 네 쌍에서 16,000 쪽이 평균 약 9% 더 걸렸습니다. 자세한 수치는 [docs/06](docs/06_데이터양_비교.md#실제로-얼마나-다른가)에 있습니다.
 
+다만 위키로만 학습한 이 두 모델을 대화체 질문·답으로 참고 평가했을 때는 6,400이 앞섰습니다(답변 BPB Δ: 텍스트만 −0.0099, 답 끝 표시 토큰까지 넣으면 −0.0576). 판정은 바꾸지 않았고, SFT 뒤에 같은 평가로 다시 잽니다([docs/06 다음 단계](docs/06_데이터양_비교.md#다음-단계)).
+
 * 사전 규칙: 100만 조각 실험의 판정 규칙은 6,400 모델의 학습을 시작한 직후, 100만 조각 결과를 보기 전에 “Δ(100만)의 95% 구간 하한이 0보다 크면 16,000, 그렇지 않으면 6,400을 선택한다(반올림 전 값으로 판정)”로 정했습니다. 40만까지의 판정 과정, BPC, 문서별 우세 비율은 [docs/06](docs/06_데이터양_비교.md)에 있습니다.
 * 95% 구간은 같은 검증 문서를 두 모델에 짝지어 위키 문서 단위로 10,000번 다시 뽑아 구했습니다.
 
@@ -208,6 +210,8 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | [scale_costs.py](scripts/scale_costs.py) | `minimind_ko` | 파라미터 구성, 크기별 학습 step당 시간, 100만 loss 구간 평균 출력. `--bench`로 GPU 생성 속도·메모리 측정 (docs/06) |
 | [analyze_scale_results.py](scripts/analyze_scale_results.py) | `minimind_ko` | 판정을 재현한 뒤 토큰당 손실, 100만 Δ의 크기, 계산 방식을 바꾼 Δ, 글 특징별 Δ(탐색적) 출력 (docs/06) |
 | [plot_scale_details.py](scripts/plot_scale_details.py) | `minimind_ko` | 위 세 스크립트의 `--out` JSON으로 docs/06 보조 그림 4장 저장 |
+| [prepare_chat_eval.py](scripts/prepare_chat_eval.py) | `minimind_ko` | 대화 데이터(songys/Chatbot_data)를 정리해 묶음 단위로 평가용 쌍과 SFT 후보로 나눔 (docs/06) |
+| [eval_chat_bpb.py](scripts/eval_chat_bpb.py) | `minimind_ko` | 질문을 문맥으로 주고 답변만 채점한 BPB로 두 모델을 비교 (docs/06) |
 
 </details>
 
