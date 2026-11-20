@@ -5,6 +5,8 @@
 원본에서 고정돼 있던 두 가지만 바꾼다.
   1. 토크나이저 경로 (원본: ../model 고정)
   2. 모델 vocab 크기 (원본: MiniMindConfig 기본값 6400 고정) → 토크나이저 크기에 맞춤
+그 밖에 실행마다 체크포인트 폴더를 나누는 --ckpt_dir와, 그 체크포인트에서 이어서 학습하는
+--resume(원본 --from_resume과 같은 방식)을 더했다. 원본 파일은 고치지 않는다.
 
 사용법 (minimind_ko 폴더에서 실행):
     .venv\\Scripts\\python.exe -X utf8 scripts\\train_pretrain_ko.py ^
@@ -37,6 +39,10 @@ def parse_args():
     p.add_argument("--tokenizer_dir", required=True, help="토크나이저 폴더 (예: tokenizers/ko_16000)")
     p.add_argument("--data_path", required=True, help="학습 데이터 jsonl ({\"text\": ...})")
     p.add_argument("--out_dir", default="out_ko", help="가중치 저장 폴더")
+    p.add_argument("--ckpt_dir", default="",
+                   help="재개용 체크포인트 폴더 (비우면 원본처럼 minimind/checkpoints, 같은 이름이면 덮어씀)")
+    p.add_argument("--resume", type=int, default=0, choices=[0, 1],
+                   help="1이면 --ckpt_dir의 _resume.pth에서 이어서 학습 (원본 --from_resume과 같은 방식)")
     p.add_argument("--epochs", type=int, default=1)
     p.add_argument("--batch_size", type=int, default=16)
     p.add_argument("--learning_rate", type=float, default=5e-4)
@@ -86,17 +92,39 @@ def main():
     base.optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate)
     base.scaler = torch.cuda.amp.GradScaler(enabled=(args.dtype == "float16"))
     base.autocast_ctx = autocast_ctx
+    if args.ckpt_dir:
+        # 원본 train_epoch()는 lm_checkpoint(save_dir='../checkpoints')로 고정 위치에 저장한다.
+        # 실행마다 체크포인트를 분리하려고 원본 파일은 고치지 않고 이 모듈의 함수만 감싸 save_dir을 바꾼다.
+        ckpt_dir = os.path.join(ROOT, args.ckpt_dir)
+        original_lm_checkpoint = base.lm_checkpoint
+        base.lm_checkpoint = lambda *a, **kw: original_lm_checkpoint(*a, **{**kw, "save_dir": ckpt_dir})
 
     # 원본 train_epoch()는 체크포인트를 '../checkpoints'(현재 폴더 기준)에 저장하므로
     # minimind/trainer에서 실행하는 것과 같은 위치(minimind/checkpoints)가 되도록 이동한다
     os.chdir(os.path.join(MINIMIND_DIR, "trainer"))
 
-    for epoch in range(args.epochs):
+    start_epoch, start_step = 0, 0
+    if args.resume:
+        # 원본 train_pretrain.py의 --from_resume과 같은 순서로 모델·옵티마이저·스케일러와 step을 되살린다.
+        # 데이터 순서는 시드로 고정된 randperm이라, 앞의 start_step개 배치만 건너뛰면 끊기기 전과 같은 배치가 이어진다.
+        resume_path = os.path.join(ROOT, args.ckpt_dir, f"{args.save_weight}_{args.hidden_size}_resume.pth")
+        if not args.ckpt_dir or not os.path.exists(resume_path):
+            raise FileNotFoundError(f"이어서 학습할 체크포인트가 없음: {resume_path}")
+        ckp = torch.load(resume_path, map_location="cpu")
+        model.load_state_dict(ckp["model"])
+        base.optimizer.load_state_dict(ckp["optimizer"])
+        base.scaler.load_state_dict(ckp["scaler"])
+        start_epoch, start_step = ckp["epoch"], ckp["step"]
+        del ckp
+        Logger(f"재개: {resume_path} | epoch {start_epoch + 1}, step {start_step + 1}부터")
+
+    for epoch in range(start_epoch, args.epochs):
         setup_seed(args.seed + epoch)
         indices = torch.randperm(len(train_ds)).tolist()
-        loader = DataLoader(train_ds, batch_sampler=SkipBatchSampler(indices, args.batch_size, 0),
+        skip = start_step if epoch == start_epoch else 0
+        loader = DataLoader(train_ds, batch_sampler=SkipBatchSampler(indices, args.batch_size, skip),
                             num_workers=args.num_workers, pin_memory=True)
-        base.train_epoch(epoch, loader, len(loader), 0, None)
+        base.train_epoch(epoch, loader, len(loader) + skip, skip, None)
     Logger(f"완료: {os.path.join(out_dir, f'{args.save_weight}_{args.hidden_size}.pth')}")
 
 

@@ -21,6 +21,7 @@ vocab 크기가 다른 토크나이저끼리는 토큰당 loss를 비교할 수 
     (빠른 동작 확인: --limit 50 --device cpu)
 """
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -120,6 +121,7 @@ def main():
         texts = texts[:args.limit]
 
     total_chars = 0
+    total_bytes = 0
     total_text_tokens = 0
     nll_text = 0.0
     nll_eos = 0.0
@@ -135,7 +137,9 @@ def main():
         nll_eos += nll[-1]
         total_text_tokens += len(nll) - 1
         total_chars += len(text)
-        per_doc.append({"chars": len(text), "tokens": len(nll) - 1, "nll": sum(nll)})
+        n_bytes = len(text.encode("utf-8"))
+        total_bytes += n_bytes
+        per_doc.append({"chars": len(text), "bytes": n_bytes, "tokens": len(nll) - 1, "nll": sum(nll)})
         if i % 200 == 0:
             print(f"  {i}/{len(texts)} ({time.time() - t0:.0f}s)", flush=True)
 
@@ -153,6 +157,10 @@ def main():
     print(f"BPC (텍스트만)         : {nll_text / ln2 / total_chars:.4f}")
     print(f"토큰당 loss (텍스트+eos): {(nll_text + nll_eos) / (total_text_tokens + n_docs):.4f}")
     print(f"토큰당 평균 글자 수     : {total_chars / total_text_tokens:.3f}")
+    # BPB: 같은 손실 합을 UTF-8 바이트 수로 나눈다 (데이터 양 실험의 판정 지표, docs/06)
+    print(f"BPB (텍스트+eos)       : {(nll_text + nll_eos) / ln2 / total_bytes:.4f}")
+    # 두 모델이 정말 같은 텍스트를 평가했는지 확인하기 위한 해시 (평가한 텍스트를 \n으로 이어 붙인 UTF-8)
+    print(f"평가 텍스트 sha256: {hashlib.sha256(chr(10).join(texts).encode('utf-8')).hexdigest()}")
 
 
 if __name__ == "__main__":

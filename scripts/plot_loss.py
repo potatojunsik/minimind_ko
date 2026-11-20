@@ -1,6 +1,7 @@
 """
 학습 로그(train_pretrain*.py 출력)에서 step별 loss를 읽어 그래프 이미지(PNG)로 저장한다.
 로그 한 줄 형식: Epoch:[1/1](50/6250), loss: 8.4956, ...
+끊긴 뒤 이어서 학습해 같은 step이 여러 번 찍힌 로그는 step마다 마지막 기록만 쓴다.
 
 사용법 (minimind_ko 폴더에서 실행):
     .venv\\Scripts\\python.exe -X utf8 scripts\\plot_loss.py <출력.png> "<제목>" <이름=로그경로> [<이름=로그경로>]   (로그는 최대 2개)
@@ -16,7 +17,7 @@ matplotlib.use("Agg")  # 화면 없이 파일로만 저장
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib import font_manager  # noqa: E402
 
-LOG_PATTERN = re.compile(r"\((\d+)/(\d+)\), loss: ([\d.]+)")
+LOG_PATTERN = re.compile(r"Epoch:\[(\d+)/\d+\]\((\d+)/(\d+)\), loss: ([\d.]+)")
 # 파랑·주황: 색각 이상(적록/청황)이 있어도 서로 구분되고, 밝은 배경과 대비 3:1 이상인 조합
 SERIES_COLORS = ["#2a78d6", "#eb6834"]
 SURFACE = "#fcfcfb"
@@ -38,14 +39,17 @@ def pick_korean_font():
 
 
 def read_log(path):
-    steps, losses = [], []
+    """step 순서로 정렬한 (step 목록, loss 목록). step은 epoch마다 1부터 다시 세므로 epoch를 반영한 누적 step으로 바꾼다.
+    끊긴 뒤 이어서 학습한 로그에는 같은 step이 다시 나오므로 마지막 기록을 쓴다."""
+    loss_by_step = {}
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             m = LOG_PATTERN.search(line)
             if m:
-                steps.append(int(m.group(1)))
-                losses.append(float(m.group(3)))
-    return steps, losses
+                epoch, step, steps_per_epoch = int(m.group(1)), int(m.group(2)), int(m.group(3))
+                loss_by_step[(epoch - 1) * steps_per_epoch + step] = float(m.group(4))
+    steps = sorted(loss_by_step)
+    return steps, [loss_by_step[s] for s in steps]
 
 
 def smooth(values):
