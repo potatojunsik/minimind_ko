@@ -28,11 +28,11 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · The model archit
 
 </div>
 
-A personal study log of training Korean tokenizers and a MiniMind-based language model from scratch on a single 8GB laptop GPU. The original MiniMind tokenizer splits “오늘 날씨가 정말 좋네요.” (“The weather is really nice today.”) into 30 tokens, while the Korean tokenizers built here split it into 11 tokens with a 6,400-token vocabulary and 9 with a 16,000-token vocabulary. So I expected the 16,000 side to do better, but after training on 100k Wikipedia chunks, the 6,400 model predicted held-out text better. At 1M chunks the order flipped: the 16,000 model had the lower held-out BPB, and 16,000 was selected under the pre-registered rule.
+A personal study log of training Korean tokenizers and a MiniMind-based language model from scratch on a single 8GB laptop GPU. The original MiniMind tokenizer splits “오늘 날씨가 정말 좋네요.” (“The weather is really nice today.”) into 30 tokens, while the Korean tokenizers built here split it into 11 tokens with a 6,400-token vocabulary and 9 with a 16,000-token vocabulary. So I expected the 16,000 side to do better. I split Wikipedia articles into chunks of up to 800 characters. When trained on 100,000 of these chunks, the model with a 6,400-token vocabulary had a lower validation BPB. At one million training chunks, the ordering reversed. The model with a 16,000-token vocabulary had a slightly lower validation BPB, so I selected that vocabulary under the rule I had set before seeing the one-million-chunk results.
 
 ![Held-out BPB by training data size (vocab 6,400 / 16,000)](images/scale_bpb_en.png)
 
-The 1M set is the existing 400k chunks plus 600k more chunks; at each size, both models were trained from scratch.
+The 1M set is the existing 400k chunks plus 600k more chunks; at each size, both models were trained from scratch. In the lower panel, points show Δ = BPB(6,400) − BPB(16,000). Error bars show 95% paired bootstrap intervals obtained by resampling documents. Values above zero favor 16,000.
 
 ---
 
@@ -48,13 +48,13 @@ BPB (bits per byte) is the average number of bits spent per UTF-8 byte to predic
 | 400k | 1.1046 | 1.1073 | −0.0027 | [−0.0042, −0.0012] |
 | 1M | 1.0097 | 1.0080 | +0.0017 | [+0.0003, +0.0030] |
 
-**At 1M chunks the 16,000 model had the lower held-out BPB (Δ +0.0017), and the lower bound of the 95% interval ([+0.0003, +0.0030]) was above 0, so 16,000 was selected under the pre-registered rule.**
+**At 1M chunks the 16,000 model had the lower held-out BPB (Δ +0.0017), and the lower bound of the 95% interval ([+0.0003, +0.0030]) was above 0, so 16,000 was selected under the rule set before seeing the 1M results.**
 
 Each model was trained only once, with seed 42. The 95% intervals reflect only the variation from re-sampling held-out documents, not the variation from training again.
 
 At 1M chunks, the validation BPB was 1.0097 for the 6,400 model and 1.0080 for the 16,000 model, about 0.17% lower relative to 6,400. Tokenizing the same training text, the 16,000 tokenizer produced 12.8% fewer tokens. In this training, each chunk was placed in its own 512-token slot and processed with the same batch size, so both models trained for the same number of steps; across the four measured pairs, each step took about 9% longer on average for the 16,000 model. Details are in [docs/06](docs/06_데이터양_비교.md#실제로-얼마나-다른가) (Korean).
 
-* Pre-registered rule: before seeing the 1M results, the rule was fixed as “select 16,000 if the lower bound of the 95% interval of Δ(1M) is above 0, otherwise select 6,400 (decided on unrounded values)”. The decision process up to 400k, BPC, and per-document win rates are in [docs/06](docs/06_데이터양_비교.md) (Korean).
+* Decision rule: I set the decision rule shortly after training began on the 6,400-vocabulary model, before seeing either model’s results at one million chunks, as “select 16,000 if the lower bound of the 95% interval of Δ(1M) is above 0, otherwise select 6,400 (decided on unrounded values)”. The decision process up to 400k, BPC, and per-document win rates are in [docs/06](docs/06_데이터양_비교.md) (Korean).
 * The 95% intervals come from 10,000 paired bootstrap re-samples of Wikipedia documents, applying the same held-out documents to both models.
 
 <details>
@@ -127,7 +127,7 @@ Each step is recorded in [docs/](docs) (Korean) with commands, results, lessons 
 | 2 | How much shorter does a Korean-only tokenizer make sentences? | ✅ A 113-character Korean description: original 231 tokens → 57 with 6,400, 45 with 16,000 | [docs/03](docs/03_한국어_토크나이저.md) (Korean) |
 | 3 | Does loss go down when pretraining from scratch with our own tokenizer? | ✅ vocab 16,000, 100k Wikipedia chunks, loss 8.50 → 4.45 | [docs/04](docs/04_한국어_사전학습.md) (Korean) |
 | 3-1 | Does 16,000, which uses fewer tokens, predict better? (100k Wikipedia chunks) | ✅ Contrary to the expectation, 6,400 was better | [docs/05](docs/05_vocab_비교.md) (Korean) |
-| 3-2 | Does the result flip with more data? (50k to 1M chunks) | ✅ 16,000 led at 1M and was selected under the pre-registered rule | [docs/06](docs/06_데이터양_비교.md) (Korean) |
+| 3-2 | Does the result flip with more data? (50k to 1M chunks) | ✅ 16,000 led at 1M and was selected under the rule set before seeing the 1M results | [docs/06](docs/06_데이터양_비교.md) (Korean) |
 | 4 | Final pretraining with the selected tokenizer, then Korean chat training (SFT) | ⏳ Planned | |
 | 5 | (Optional) LoRA, DPO | ⏳ Planned | |
 
@@ -203,8 +203,12 @@ Every script has usage instructions in its top docstring (Korean). The working d
 | [plot_loss.py](scripts/plot_loss.py) | `minimind_ko` | Reads step-wise loss from a training log and saves a PNG plot (batch loss + moving-average trend) |
 | [prepare_scale_data.py](scripts/prepare_scale_data.py) | `minimind_ko` | Builds a held-out set and nested training sets (50k-1M) split by original document, and checks for overlap (docs/06) |
 | [run_scale.py](scripts/run_scale.py) / [run_scale.bat](scripts/run_scale.bat) | `minimind_ko` | Runner for the data-scale experiment. Runs training, evaluation and the decision in order; if it stops, running it again resumes (no duplicate runs) |
-| [decide_vocab.py](scripts/decide_vocab.py) | `minimind_ko` | Prints BPB and BPC per size, Δ with a document-level paired bootstrap 95% interval, and the decision under the pre-registered rule |
+| [decide_vocab.py](scripts/decide_vocab.py) | `minimind_ko` | Prints BPB and BPC per size, Δ with a document-level paired bootstrap 95% interval, and the decision under the rule set before seeing the 1M results |
 | [plot_scale_bpb.py](scripts/plot_scale_bpb.py) | `minimind_ko` | Saves the BPB-by-training-size plot from `decision.json` (Korean / English) |
+| [scale_token_stats.py](scripts/scale_token_stats.py) | `minimind_ko` | Tokenizes the training and held-out sets exactly as in training and prints token counts, truncated chunks, padding share and characters per token per vocab (docs/06) |
+| [scale_costs.py](scripts/scale_costs.py) | `minimind_ko` | Prints the parameter breakdown, seconds per training step per size, and 1M loss averages by range. `--bench` measures GPU generation speed and memory (docs/06) |
+| [analyze_scale_results.py](scripts/analyze_scale_results.py) | `minimind_ko` | Reproduces the decision, then prints per-token loss, the size of the 1M Δ, Δ under other calculations, and Δ by text feature (exploratory) (docs/06) |
+| [plot_scale_details.py](scripts/plot_scale_details.py) | `minimind_ko` | Saves the four supporting figures in docs/06 from the `--out` JSON of the three scripts above |
 
 </details>
 
@@ -223,8 +227,8 @@ This repository is a study log. The resulting models are not meant for real use,
 |---|---|---|---|
 | Small pretraining trial ([docs/02](docs/02_사전학습_체험.md)) | 20k lines of Chinese, original tokenizer | about 6 min | about 4GB |
 | Tokenizer training ([docs/03](docs/03_한국어_토크나이저.md)) | 200k Wikipedia chunks | about 50 s each (CPU) | - |
-| First comparison ([docs/04](docs/04_한국어_사전학습.md), [05](docs/05_vocab_비교.md)) | 100k Wikipedia chunks | about 35 min / about 52 min ※ | about 5.3GB / about 6.8GB |
-| Data-scale experiment ([docs/06](docs/06_데이터양_비교.md)) | 50k / 100k / 200k / 400k / 1M Wikipedia chunks | 50k: 20 min / 21 min<br>100k: 39 min / 43 min<br>200k: 1.3 h / 1.4 h<br>400k: 2.6 h / 2.8 h<br>1M: 6.6 h / 7.2 h (sum of resumed segments) | about 5.3GB / about 6.8GB (measured during the 1M runs) |
+| First comparison ([docs/04](docs/04_한국어_사전학습.md), [05](docs/05_vocab_비교.md)) | 100k Wikipedia chunks | about 35 min / about 52 min ※ | about 5,300MiB / about 6,800MiB |
+| Data-scale experiment ([docs/06](docs/06_데이터양_비교.md)) | 50k / 100k / 200k / 400k / 1M Wikipedia chunks | 50k: 20 min / 21 min<br>100k: 39 min / 43 min<br>200k: 1.3 h / 1.4 h<br>400k: 2.6 h / 2.8 h<br>1M: 6.6 h / 7.2 h (sum of resumed segments) | about 5,300MiB / about 6,800MiB (measured during the 1M runs) |
 
 * GPU memory is the total GPU usage seen with nvidia-smi during training. The linked documents are in Korean.
 * ※ The 16,000 training time in the first comparison includes a stretch slowed down by the GPU power limit (21W), so it is only a reference. In the same stretch where both runs were in performance mode, the time per step was 0.335 s for 6,400 and 0.362 s for 16,000 ([docs/05](docs/05_vocab_비교.md#실험-조건), Korean).
@@ -310,7 +314,17 @@ Also thanks to:
 
 # 🎓 Citation
 
-If you find this repository useful, please cite the original MiniMind.
+If you use or refer to the code, tokenizers, or results in this repository, please cite both this repository and the original MiniMind.
+
+```bibtex
+@misc{minimind_ko,
+  title = {minimind\_ko: Korean tokenizers and a tiny Korean LLM trained from scratch with MiniMind},
+  author = {potatojunsik},
+  year = {2026},
+  url = {https://github.com/potatojunsik/minimind_ko},
+  note = {GitHub repository}
+}
+```
 
 ```bibtex
 @misc{minimind,
@@ -326,7 +340,8 @@ If you find this repository useful, please cite the original MiniMind.
 
 # ⚖️ License
 
-* The scripts and documents in this repository follow Apache License 2.0, the same as the original MiniMind. The full text is in [LICENSE](LICENSE).
+* The scripts and documents in this repository follow Apache License 2.0, the same as the original MiniMind. The full text is in [LICENSE](LICENSE). Copyright 2026 potatojunsik.
+* If you distribute this code or the tokenizers, with or without changes, please include the attribution in the [NOTICE](NOTICE) file (this repository and the original MiniMind), as required by Section 4(d) of the Apache License 2.0.
 * The Korean training data (Korean Wikipedia) is CC BY-SA 4.0 (HF dataset card: CC BY-SA 3.0 / GFDL). The data itself is not included in this repository; download and convert it yourself with `scripts/prepare_kowiki.py`.
-* The vocabulary files in `tokenizers/` were trained on Korean Wikipedia and are licensed under CC BY-SA 4.0 (source: Korean Wikipedia). The scripts and documents remain under Apache License 2.0 as above.
+* The vocabulary files in `tokenizers/` were trained on Korean Wikipedia and are licensed under CC BY-SA 4.0. When you use them, credit the source (Korean Wikipedia contributors and this repository); if you distribute modified versions, release them under the same license. The scripts and documents remain under Apache License 2.0 as above.
 * The original released model and dataset (minimind-3, minimind_dataset) are downloaded from the original author's Hugging Face repositories.

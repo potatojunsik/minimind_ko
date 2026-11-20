@@ -24,6 +24,7 @@ LABELS = {
         "title": "학습 데이터 양에 따른 검증 BPB (같은 검증 세트)",
         "xlabel": "학습 조각 수 (로그 눈금, 각 규모에서 처음부터 학습)",
         "ylabel": "BPB (UTF-8 바이트당 비트, ↓ 낮을수록 좋음)",
+        "delta_ylabel": "Δ = BPB(6,400) - BPB(16,000)\n(0보다 위면 16,000 유리)",
         "series": "vocab {:,}",
         "size": lambda n: f"{n // 10000}만",
     },
@@ -31,6 +32,7 @@ LABELS = {
         "title": "Held-out BPB by training data size (same held-out set)",
         "xlabel": "Training chunks (log scale, each size trained from scratch)",
         "ylabel": "BPB (bits per UTF-8 byte, ↓ lower is better)",
+        "delta_ylabel": "Δ = BPB(6,400) - BPB(16,000)\n(above 0 favors 16,000)",
         "series": "vocab {:,}",
         "size": lambda n: f"{n // 1000000}M" if n >= 1000000 else f"{n // 1000}k",
     },
@@ -50,27 +52,41 @@ def main(decision_path, out_path, lang):
         plt.rcParams["font.family"] = font
     plt.rcParams["axes.unicode_minus"] = False
 
-    fig, ax = plt.subplots(figsize=(8, 4.5), dpi=150)
+    # 위: 두 vocab의 BPB 추세. 아래: 판정 근거인 Δ와 95% 구간(위 축척으로는 100만의 작은 역전이 보이지 않아서 따로 그린다)
+    fig, (ax, ax_d) = plt.subplots(2, 1, figsize=(8, 6.4), dpi=150, sharex=True,
+                                   gridspec_kw={"height_ratios": [2, 1.15]})
     fig.patch.set_facecolor(SURFACE)
-    ax.set_facecolor(SURFACE)
+    for a in (ax, ax_d):
+        a.set_facecolor(SURFACE)
+        a.grid(axis="y", color=GRID, linewidth=0.8)
+        a.tick_params(colors=MUTED, labelsize=8, length=0)
+        for side in ("top", "right", "left"):
+            a.spines[side].set_visible(False)
+        a.spines["bottom"].set_color(GRID)
 
     for color, marker, vocab in zip(SERIES_COLORS, MARKERS, VOCABS):
         values = [sizes_info[str(n)][f"bpb_{vocab}"] for n in sizes]
         ax.plot(sizes, values, color=color, linewidth=2, marker=marker, markersize=5,
                 label=text["series"].format(vocab))
 
+    deltas = [sizes_info[str(n)]["delta_bpb"] for n in sizes]
+    cis = [sizes_info[str(n)]["delta_bpb_ci"] for n in sizes]
+    errors = [[d - lo for d, (lo, _) in zip(deltas, cis)], [hi - d for d, (_, hi) in zip(deltas, cis)]]
+    ax_d.axhline(0, color=TEXT_SECONDARY, linewidth=1)
+    ax_d.errorbar(sizes, deltas, yerr=errors, fmt="o", color=TEXT_PRIMARY, ecolor=TEXT_SECONDARY,
+                  elinewidth=2, capsize=0, markersize=5)
+    last, (lo, hi) = deltas[-1], cis[-1]
+    ax_d.annotate(f"{last:+.4f} [{lo:+.4f}, {hi:+.4f}]", (sizes[-1], hi), xytext=(0, 8),
+                  textcoords="offset points", ha="right", fontsize=8.5, color=TEXT_PRIMARY)
+
     ax.set_xscale("log")
-    ax.set_xticks(sizes)
-    ax.set_xticklabels([text["size"](n) for n in sizes])
-    ax.minorticks_off()
+    ax_d.set_xticks(sizes)
+    ax_d.set_xticklabels([text["size"](n) for n in sizes])
+    ax_d.minorticks_off()
     ax.set_title(text["title"], loc="left", fontsize=12, color=TEXT_PRIMARY, pad=12)
-    ax.set_xlabel(text["xlabel"], color=TEXT_SECONDARY, fontsize=9)
+    ax_d.set_xlabel(text["xlabel"], color=TEXT_SECONDARY, fontsize=9)
     ax.set_ylabel(text["ylabel"], color=TEXT_SECONDARY, fontsize=9)
-    ax.grid(axis="y", color=GRID, linewidth=0.8)
-    ax.tick_params(colors=MUTED, labelsize=8, length=0)
-    for side in ("top", "right", "left"):
-        ax.spines[side].set_visible(False)
-    ax.spines["bottom"].set_color(GRID)
+    ax_d.set_ylabel(text["delta_ylabel"], color=TEXT_SECONDARY, fontsize=9)
     ax.legend(frameon=False, fontsize=9, labelcolor=TEXT_SECONDARY, loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path, facecolor=SURFACE)

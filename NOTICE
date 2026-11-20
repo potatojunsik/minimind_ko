@@ -1,0 +1,9 @@
+minimind_ko
+Copyright 2026 potatojunsik (https://github.com/potatojunsik/minimind_ko)
+
+This product includes software from MiniMind (https://github.com/jingyaogong/minimind),
+Copyright Jingyao Gong, licensed under the Apache License 2.0.
+
+The vocabulary files in tokenizers/ were trained on Korean Wikipedia text
+(https://ko.wikipedia.org) and are licensed under CC BY-SA 4.0.
+Attribution: Korean Wikipedia contributors; tokenizers by potatojunsik (minimind_ko).
