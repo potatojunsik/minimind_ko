@@ -1,0 +1,98 @@
+{
+  "note": "답을 생성하기 전에 고정한 질문과 설정. 생성 결과는 고르거나 고치지 않고 전부 싣는다.",
+  "seed": 20261124,
+  "sensitive_words": [
+    "죽",
+    "자살",
+    "자해",
+    "병원",
+    "수술",
+    "약 먹",
+    "우울"
+  ],
+  "skipped_sensitive": [],
+  "settings": {
+    "weight": "out_final/sft/sft_ko16000_768.pth",
+    "tokenizer": "tokenizers/ko_16000",
+    "prompt": "<|im_start|>user\n{질문}<|im_end|>\n<|im_start|>assistant\n",
+    "decoding": "greedy (do_sample=False, temperature 1.0, top_k 0, top_p 1.0, repetition_penalty 1.0)",
+    "max_new_tokens": 96,
+    "stop": "<|im_end|>",
+    "dtype": "fp32",
+    "truncated_mark": "[상한에서 잘림]",
+    "same_as": "07번 블라인드 비교 blind_chat_eval.generate_one"
+  },
+  "weight_sha256": "c9a11e2d3d43935abf1835f30b5754095518abcd50823af31fae4205a908e240",
+  "items": [
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "진짜 이제 한계야",
+      "reference": "당신의 잠재력을 믿어보세요.",
+      "group": 3134,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 1
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "양심이 콕콕",
+      "reference": "그런 일은 하지 마세요.",
+      "group": 3018,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 2
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "나를 좋아한다는 사람한테 호감이 생길까요?",
+      "reference": "꾸준히 만나다보면 생길 수 있어요.",
+      "group": 9123,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 3
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "결국 또 꿈꿨네.",
+      "reference": "다른 생각 하고 주무세요.",
+      "group": 5490,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 4
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "이제 헤어진지 1주일됐어",
+      "reference": "긴 시간이었을거라 생각해요.",
+      "group": 7666,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 5
+    },
+    {
+      "category": "일상 (직접 씀)",
+      "q": "오늘 비가 와서 그런지 기분이 좀 가라앉아",
+      "expect": "학습 데이터와 같은 말투라 짧은 공감 답을 예상",
+      "id": 6
+    },
+    {
+      "category": "위키 지식",
+      "q": "대한민국의 수도는 어디야?",
+      "expect": "SFT 데이터에 지식 문답이 없어 틀리거나 엉뚱한 답을 예상",
+      "id": 7
+    },
+    {
+      "category": "위키 지식",
+      "q": "세종대왕은 어떤 일을 했어?",
+      "expect": "SFT 데이터에 지식 문답이 없어 틀리거나 엉뚱한 답을 예상",
+      "id": 8
+    },
+    {
+      "category": "범위 밖 (지시)",
+      "q": "다음 문장을 영어로 번역해 줘: 나는 학생이다",
+      "expect": "번역 지시를 배운 적이 없어 실패를 예상",
+      "id": 9
+    },
+    {
+      "category": "범위 밖 (계산)",
+      "q": "123 더하기 456은 얼마야?",
+      "expect": "계산을 배운 적이 없어 실패를 예상",
+      "id": 10
+    }
+  ]
+}

@@ -7,6 +7,8 @@
   2. 모델 vocab 크기 (원본: MiniMindConfig 기본값 6400 고정) → 토크나이저 크기에 맞춤
 그 밖에 실행마다 체크포인트 폴더를 나누는 --ckpt_dir와, 그 체크포인트에서 이어서 학습하는
 --resume(원본 --from_resume과 같은 방식)을 더했다. 원본 파일은 고치지 않는다.
+최종 사전학습용으로 --pack(조각을 이어 붙여 512칸을 채우는 패킹, scripts/packing.py)과
+--keep_epoch_weights(epoch가 끝날 때마다 가중치를 따로 복사)를 더했다. 둘 다 기본값 0이면 이전과 똑같이 동작한다.
 
 사용법 (minimind_ko 폴더에서 실행):
     .venv\\Scripts\\python.exe -X utf8 scripts\\train_pretrain_ko.py ^
@@ -14,7 +16,9 @@
 결과: out_ko/pretrain_ko<vocab>_768.pth
 """
 import argparse
+import json
 import os
+import shutil
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,6 +37,9 @@ from dataset.lm_dataset import PretrainDataset  # noqa: E402
 from model.model_minimind import MiniMindConfig, MiniMindForCausalLM  # noqa: E402
 from trainer.trainer_utils import Logger, SkipBatchSampler, get_model_params, setup_seed  # noqa: E402
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from packing import PackedPretrainDataset, tokenize_and_pack  # noqa: E402
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="MiniMind 한국어 사전학습")
@@ -44,6 +51,10 @@ def parse_args():
     p.add_argument("--resume", type=int, default=0, choices=[0, 1],
                    help="1이면 --ckpt_dir의 _resume.pth에서 이어서 학습 (원본 --from_resume과 같은 방식)")
     p.add_argument("--epochs", type=int, default=1)
+    p.add_argument("--pack", type=int, default=0, choices=[0, 1],
+                   help="1이면 조각을 [bos]+텍스트+[eos]로 이어 붙여 max_seq_len씩 자른 줄로 학습 (자르는 조각 없음)")
+    p.add_argument("--keep_epoch_weights", type=int, default=0, choices=[0, 1],
+                   help="1이면 epoch가 끝날 때마다 가중치를 <이름>_epoch<N>.pth로 복사해 둔다")
     p.add_argument("--batch_size", type=int, default=16)
     p.add_argument("--learning_rate", type=float, default=5e-4)
     # 위키 800자 조각 기준 ko_6400은 p95 501토큰, ko_16000은 p95 445토큰이라 두 쪽 모두 거의 안 잘리도록 512
@@ -81,7 +92,16 @@ def main():
 
     dtype = torch.bfloat16 if args.dtype == "bfloat16" else torch.float16
     autocast_ctx = nullcontext() if "cpu" in args.device else torch.cuda.amp.autocast(dtype=dtype)
-    train_ds = PretrainDataset(data_path, tokenizer, max_length=args.max_seq_len)
+    if args.pack:
+        with open(data_path, encoding="utf-8") as f:
+            texts = [json.loads(line)["text"] for line in f]
+        rows, stats = tokenize_and_pack(texts, tokenizer, args.max_seq_len)
+        del texts
+        train_ds = PackedPretrainDataset(rows, tokenizer.bos_token_id, tokenizer.pad_token_id)
+        Logger(f"패킹: 조각 {stats['chunks']:,}개 | 토큰 {stats['tokens']:,}개 (bos·eos 포함) | "
+               f"{args.max_seq_len}칸 줄 {stats['rows']:,}개 | 마지막 줄 pad {stats['pad']}칸")
+    else:
+        train_ds = PretrainDataset(data_path, tokenizer, max_length=args.max_seq_len)
 
     # 원본 train_epoch()가 참조하는 모듈 전역값을 채운다
     args.save_dir = out_dir
@@ -125,6 +145,10 @@ def main():
         loader = DataLoader(train_ds, batch_sampler=SkipBatchSampler(indices, args.batch_size, skip),
                             num_workers=args.num_workers, pin_memory=True)
         base.train_epoch(epoch, loader, len(loader) + skip, skip, None)
+        if args.keep_epoch_weights:
+            weight = os.path.join(out_dir, f"{args.save_weight}_{args.hidden_size}.pth")
+            shutil.copyfile(weight, os.path.join(out_dir, f"{args.save_weight}_{args.hidden_size}_epoch{epoch + 1}.pth"))
+            Logger(f"epoch {epoch + 1} 가중치 복사: {args.save_weight}_{args.hidden_size}_epoch{epoch + 1}.pth")
     Logger(f"완료: {os.path.join(out_dir, f'{args.save_weight}_{args.hidden_size}.pth')}")
 
 
