@@ -24,7 +24,7 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · The model archit
 
 [한국어](./README.md) | English
 
-[Results](#-results) · [Final model and chat examples](#-final-model-and-chat-examples) · [Model architecture](#model-architecture) · [Try the comparison](#-try-the-comparison) · [Step-by-step notes](#-step-by-step-notes) · [Full reproduction](#-full-reproduction) · [Environment and what is published](#-environment-and-what-is-published) · [Differences from MiniMind and sources](#-differences-from-minimind-and-sources)
+[Results](#-results) · [Final model and chat examples](#-final-model-and-chat-examples) · [Model](#model-architecture) · [Try the comparison](#-try-the-comparison) · [Step-by-step notes](#-step-by-step-notes) · [Full reproduction](#-full-reproduction) · [Environment and what is published](#-environment-and-what-is-published) · [Differences from MiniMind and sources](#-differences-from-minimind-and-sources)
 
 </div>
 
@@ -107,37 +107,25 @@ The model answers short everyday and comforting questions with natural Korean se
 ---
 
 <a name="model-architecture"></a>
-# 📌 Model architecture
+# 📌 Model
 
-The models use the original MiniMind `minimind-3` (Dense) architecture unchanged; only the vocabulary size differs. The model code is the original [`model/model_minimind.py`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/model/model_minimind.py), imported without modification.
+## Architecture
 
-![minimind_ko final model architecture: (a) overall flow, (b) Transformer block, (c) GQA attention, (d) SwiGLU FFN and parameter counts](images/architecture_en.png)
+The models in this repository use the same decoder-only Transformer architecture as the original `minimind-3` Dense; only the vocabulary was changed to the size of the Korean tokenizers built here (6,400 / 16,000). The model code is the original [`model/model_minimind.py`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/model/model_minimind.py), imported without modification. According to the original README, the architecture is aligned with the `Qwen3` family so it can be converted to `transformers / llama.cpp / ollama / vllm`; no such conversion was tried in this repository.
 
-The numbers in the figure are not typed by hand: [scripts/plot_architecture.py](scripts/plot_architecture.py) reads them from the original model code and `tokenizers/ko_16000` (no weight files needed). The token pieces in (a) are the actual tokenization of the example sentence, and the orange dashed outlines in (c) mark where LoRA was attached in [docs/09](docs/09_LoRA_DPO_체험.md). The layout follows the original MiniMind architecture figure.
+* Pre-Norm + RMSNorm ([Xiong et al., 2020](https://arxiv.org/abs/2002.04745), [Zhang & Sennrich, 2019](https://arxiv.org/abs/1910.07467)).
+* SwiGLU activation, with an FFN intermediate size of 2,432 (= ⌈768 × π / 64⌉ × 64) ([Shazeer, 2020](https://arxiv.org/abs/2002.05202)).
+* RoPE rotary position encoding (`rope_theta=1e6`, [Su et al., 2021](https://arxiv.org/abs/2104.09864)). The original also supports YaRN extrapolation ([Peng et al., 2023](https://arxiv.org/abs/2309.00071)), which is not enabled here.
+* GQA with `q_heads=8`, `kv_heads=4` ([Ainslie et al., 2023](https://arxiv.org/abs/2305.13245)); Q and K get a per-head RMSNorm (QK-Norm) before RoPE.
+* `max_position_embeddings=32768` is the configured value; the actual training length is 512 tokens for pretraining and 128 tokens for chat SFT.
+* The input embedding and the output layer share weights (`tie_word_embeddings=True`, [Press & Wolf, 2016](https://arxiv.org/abs/1608.05859)), so a larger vocabulary grows only the embedding.
 
-### Components
-
-| Component | What it does | Setting in this repository | Original paper |
-|---|---|---|---|
-| Decoder-only Transformer | Predicts the next token from the preceding tokens only | 8 layers, d_model 768 | [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762) |
-| Pre-Norm + RMSNorm | Normalizes values before attention and FFN. Rescales by RMS without subtracting the mean, so it costs less than LayerNorm | Twice per layer + once before the output layer | [Xiong et al., 2020](https://arxiv.org/abs/2002.04745) · [Zhang & Sennrich, 2019](https://arxiv.org/abs/1910.07467) |
-| GQA | Several Q heads share one K/V head, reducing K/V computation and the KV cache | q_heads 8, kv_heads 4 (2 Q heads share 1 K/V pair), head_dim 96 | [Ainslie et al., 2023](https://arxiv.org/abs/2305.13245) |
-| QK-Norm | Applies per-head RMSNorm to Q and K before RoPE | `q_norm`, `k_norm` | [Henry et al., 2020](https://arxiv.org/abs/2010.04245) |
-| RoPE | Encodes token position by rotating the Q and K vectors | rope_theta 1e6 | [Su et al., 2021](https://arxiv.org/abs/2104.09864) |
-| SwiGLU FFN | Applies SiLU to one of two Linear outputs and multiplies it in as a gate | Intermediate size 2,432 (= ⌈768 × π / 64⌉ × 64) | [Shazeer, 2020](https://arxiv.org/abs/2002.05202) |
-| Tied embedding and output weights | The input embedding and the output Linear use the same matrix | `tie_word_embeddings=True`. Adding 9,600 vocabulary entries adds only 7.37M parameters | [Press & Wolf, 2016](https://arxiv.org/abs/1608.05859) |
-
-### In the original but not enabled here
-
-* **Dropout**: present in the code, but the probability is 0.0 (the original default), so it does nothing.
-* **YaRN** ([Peng et al., 2023](https://arxiv.org/abs/2309.00071)): an inference option that adjusts RoPE for contexts longer than the training length. Left off (`inference_rope_scaling=False`).
-* **Long context**: `max_position_embeddings` is configured as 32,768, but the actual training length is 512 tokens for pretraining and 128 tokens for chat SFT.
-* **MoE**: every model in this repository uses `use_moe=False`.
+The original also provides `minimind-3-moe`, which replaces the FFN of the same architecture with MoE (4 experts / top-1, no shared expert). Every model in this repository is Dense (`use_moe=False`).
 
 <details>
 <summary>The original MoE variant (not used in this repository)</summary>
 
-The original also provides `minimind-3-moe` (198M total, 64M active per token), which splits the FFN into several experts and lets a router pick only some of them for each token. The original default is 1 of 4 experts (top-1) with no shared expert. The original README says this setting is about 50% slower than Dense in its plain PyTorch implementation (not measured in this repository). Related papers: [Shazeer et al., 2017](https://arxiv.org/abs/1701.06538), top-1 routing [Fedus et al., 2021](https://arxiv.org/abs/2101.03961).
+`minimind-3-moe` splits the FFN into several experts and lets a router pick one of them for each token (198M total, 64M active per token). The original README explains that with more experts, the plain PyTorch implementation pays more for bucketing tokens by expert and running each expert separately, so even the default 4 experts / top-1 is about 50% slower than Dense (not measured in this repository). Related papers: [Shazeer et al., 2017](https://arxiv.org/abs/1701.06538), top-1 routing [Fedus et al., 2021](https://arxiv.org/abs/2101.03961).
 
 <p align="center">
   <img src="images/minimind_structure_moe.jpg" alt="MiniMind MoE model architecture" width="90%">
@@ -147,17 +135,53 @@ The original also provides `minimind-3-moe` (198M total, 64M active per token), 
 
 </details>
 
-### Models in this repository
+The final model of this repository is shown below, redrawn for this repository's model following the layout of the original architecture figure.
 
-Layers, width and heads are identical; only the embedding parameters change with the vocabulary size.
+![minimind_ko final model architecture: (a) overall flow, (b) Transformer block, (c) GQA attention, (d) SwiGLU FFN and parameter counts](images/architecture_en.png)
 
-| Model | Params | vocab | n_layers | d_model | q_heads | kv_heads | Training length | Note |
-|---|---|---|---|---|---|---|---|---|
-| minimind-3 (original public model) | 63.91M | 6,400 (original) | 8 | 768 | 8 | 4 | – | Step 1 trial only, not trained here |
-| ko 6,400 | 63.91M | 6,400 | 8 | 768 | 8 | 4 | 512 | Vocab comparison (50k–1M chunks) |
-| ko 16,000 | 71.28M | 16,000 | 8 | 768 | 8 | 4 | 512 | Vocab comparison (50k–1M chunks) |
-| **Final model** | **71.28M** | **16,000** | 8 | 768 | 8 | 4 | 512 → SFT 128 | Full training pool × 2 epochs pretraining + chat SFT |
-| LoRA adapter | +0.39M | 16,000 | 8 | 768 | 8 | 4 | 128 | rank 16, added only to q_proj and o_proj in each layer ([docs/09](docs/09_LoRA_DPO_체험.md)) |
+The numbers in the figure are not typed by hand: [scripts/plot_architecture.py](scripts/plot_architecture.py) reads them from the original model code and `tokenizers/ko_16000` (no weight files needed). The token pieces in (a) are the actual tokenization of the example sentence, and the orange dashed outlines in (c) mark where LoRA (rank 16, 0.39M) was attached in [docs/09](docs/09_LoRA_DPO_체험.md).
+
+The configuration uses the defaults of the original `MiniMindConfig` and sets only `vocab_size`. The models covered in this repository are listed below (parameter counts measured with the original model code).
+
+| Model Name | params | len_vocab | max_pos | rope_theta | n_layers | d_model | kv_heads | q_heads | note |
+|---|---|---|---|---|---|---|---|---|---|
+| minimind-3 | 63.91M | 6400 | 32768 | 1e6 | 8 | 768 | 4 | 8 | Original public model, step 1 trial only |
+| ko 6,400 | 63.91M | 6400 | 32768 | 1e6 | 8 | 768 | 4 | 8 | Vocab comparison (50k–1M chunks) |
+| ko 16,000 | 71.28M | 16000 | 32768 | 1e6 | 8 | 768 | 4 | 8 | Vocab comparison (50k–1M chunks) |
+| **Final model** | **71.28M** | **16000** | 32768 | 1e6 | 8 | 768 | 4 | 8 | Full training pool × 2 epochs pretraining + chat SFT |
+
+## Model configuration
+
+For sizing small LLMs, the original README points to [MobileLLM](https://arxiv.org/abs/2402.14905) as a representative systematic study. It explains that for models around 100M parameters, how `d_model` and `n_layers` are traded off is not only a matter of parameter allocation but also directly affects training stability and final quality.
+
+The original `minimind-3` chose `dim=768, n_layers=8` and describes it as an engineering trade-off: a shallow network trains faster, and a `dim` that is not too small avoids mode collapse. This repository kept these values and ran no depth-versus-width experiments.
+
+The only change here is the vocabulary. The Tokenizer section of the original README explains that for small models the vocabulary size directly changes the parameter share of the embedding and output layers, so keeping the vocabulary small is usually the better trade-off. Indeed, the two models here have the same layers and the same block parameters; only the embedding differs.
+
+| vocab | Embedding (= output layer) | 8 Transformer blocks | Total | Embedding share of total |
+|---|---|---|---|---|
+| 6,400 | 4.92M | 59.00M | 63.91M | 7.7% |
+| 16,000 | 12.29M | 59.00M | 71.28M | 17.2% |
+
+With 16,000 the embedding share more than doubles, but in this repository's data-size experiment its held-out BPB was slightly lower at 1M chunks, so 16,000 was chosen under the pre-registered rule ([Results](#-results)). No comparison traded vocabulary size against layer count at a fixed total.
+
+<details>
+<summary>The original's detailed explanation (d_model and n_layers)</summary>
+
+A summary of the original README's explanation. These points were not verified in this repository.
+
+Scaling laws often behave differently for small models than for large ones. The main values that set a Transformer's parameter count are `d_model` and `n_layers`:
+
+* `d_model`↑ + `n_layers`↓ → wide and shallow
+* `d_model`↓ + `n_layers`↑ → narrow and deep
+
+Classic scaling laws stress training data, parameter count and training steps and play down architectural differences, but this does not always hold for small models. MobileLLM's key observation is that at a fixed parameter count, depth often matters more than width. For example, at 125M or 350M parameters, narrow 30–42-layer models generally beat wide models of about 12 layers on commonsense reasoning, question answering, reading comprehension and other benchmarks.
+
+The original author reports seeing the same trend in MiniMind's own `d_model` / `n_layers` allocation experiments. But "narrow and deep" has a lower bound: below `d_model` 512, the narrow embedding hurts more, and with a fixed number of Q heads the head size becomes too small for extra layers to fully make up for. Conversely, above `d_model` 1,536, adding layers tends to pay off more per parameter than widening further.
+
+For reference, the original also includes GPT-3's parameter settings: [original figure `images/gpt3_config.png`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/images/gpt3_config.png).
+
+</details>
 
 ---
 

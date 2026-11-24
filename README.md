@@ -24,7 +24,7 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · 모델 구조와
 
 한국어 | [English](./README_en.md)
 
-[결과](#-결과) · [최종 모델과 대화 예시](#-최종-모델과-대화-예시) · [모델 구조](#model-architecture) · [직접 비교해 보기](#-직접-비교해-보기) · [단계별 기록](#-단계별-기록) · [전체 재현](#-전체-재현) · [실행 환경과 공개 범위](#-실행-환경과-공개-범위) · [원본 MiniMind와의 차이와 출처](#-원본-minimind와의-차이와-출처)
+[결과](#-결과) · [최종 모델과 대화 예시](#-최종-모델과-대화-예시) · [모델](#model-architecture) · [직접 비교해 보기](#-직접-비교해-보기) · [단계별 기록](#-단계별-기록) · [전체 재현](#-전체-재현) · [실행 환경과 공개 범위](#-실행-환경과-공개-범위) · [원본 MiniMind와의 차이와 출처](#-원본-minimind와의-차이와-출처)
 
 </div>
 
@@ -107,37 +107,25 @@ SFT 뒤 대화 평가용 2,001쌍의 답 본문 BPB는 1.0958로, 기존 100만 
 ---
 
 <a name="model-architecture"></a>
-# 📌 모델 구조
+# 📌 모델
 
-원본 MiniMind의 `minimind-3`(Dense) 구조를 그대로 쓰고, 어휘(vocab) 크기만 바꿨습니다. 모델 코드는 원본 [`model/model_minimind.py`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/model/model_minimind.py)를 수정하지 않고 import해서 씁니다.
+## 구조
 
-![minimind_ko 최종 모델 구조: (a) 전체 흐름, (b) Transformer 블록, (c) GQA 어텐션, (d) SwiGLU FFN과 파라미터 수](images/architecture.png)
+이 저장소의 모델은 원본 `minimind-3` Dense와 같은 Transformer Decoder-Only 구조이고, 어휘(vocab)만 직접 만든 한국어 토크나이저 크기(6,400 / 16,000)로 바꿨습니다. 모델 코드는 원본 [`model/model_minimind.py`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/model/model_minimind.py)를 수정하지 않고 import해서 씁니다. 원본 README에 따르면 이 구조는 `Qwen3` 계열 설정에 맞춰져 있어 `transformers / llama.cpp / ollama / vllm`으로 옮기기 쉽지만, 이 저장소에서는 변환해 보지 않았습니다.
 
-그림 속 숫자는 손으로 적지 않고 [scripts/plot_architecture.py](scripts/plot_architecture.py)가 원본 모델 코드와 `tokenizers/ko_16000`에서 직접 읽어 그립니다(가중치 파일 불필요). (a)의 토큰 조각은 예시 문장을 실제로 토큰화한 결과이고, (c)의 주황 점선은 [docs/09](docs/09_LoRA_DPO_체험.md)에서 LoRA를 붙인 위치입니다. 그림 구성은 원본 MiniMind의 구조 그림을 따랐습니다.
+* Pre-Norm + RMSNorm을 씁니다 ([Xiong et al., 2020](https://arxiv.org/abs/2002.04745), [Zhang & Sennrich, 2019](https://arxiv.org/abs/1910.07467)).
+* SwiGLU 활성 함수를 씁니다. FFN 중간 크기는 2,432(= ⌈768 × π / 64⌉ × 64)입니다 ([Shazeer, 2020](https://arxiv.org/abs/2002.05202)).
+* RoPE 회전 위치 인코딩을 씁니다 (`rope_theta=1e6`, [Su et al., 2021](https://arxiv.org/abs/2104.09864)). 원본은 YaRN 외삽([Peng et al., 2023](https://arxiv.org/abs/2309.00071))도 지원하지만 이 저장소에서는 켜지 않았습니다.
+* `q_heads=8`, `kv_heads=4`인 GQA([Ainslie et al., 2023](https://arxiv.org/abs/2305.13245))이고, Q·K에는 헤드별 RMSNorm(QK-Norm)을 한 뒤 RoPE를 적용합니다.
+* `max_position_embeddings=32768`은 설정값이고, 실제 학습 길이는 사전학습 512토큰, 대화 SFT 128토큰입니다.
+* 입력 임베딩과 출력층이 가중치를 공유합니다 (`tie_word_embeddings=True`, [Press & Wolf, 2016](https://arxiv.org/abs/1608.05859)). 그래서 vocab을 늘리면 임베딩 한 곳만 커집니다.
 
-### 구성 요소
-
-| 구성 요소 | 하는 일 | 이 저장소 모델의 설정 | 처음 제안한 논문 |
-|---|---|---|---|
-| 디코더 전용 Transformer | 앞쪽 토큰만 보고 다음 토큰을 예측 | 8층, d_model 768 | [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762) |
-| Pre-Norm + RMSNorm | 어텐션·FFN에 들어가기 전에 값을 정규화. 평균은 빼지 않고 크기(RMS)만 맞춰 LayerNorm보다 계산이 적음 | 층마다 2번 + 출력층 앞 1번 | [Xiong et al., 2020](https://arxiv.org/abs/2002.04745) · [Zhang & Sennrich, 2019](https://arxiv.org/abs/1910.07467) |
-| GQA | Q 헤드 여러 개가 K·V 헤드 하나를 나눠 써서 K·V 계산과 KV 캐시를 줄임 | q_heads 8, kv_heads 4 (Q 2개가 K·V 1쌍 공유), head_dim 96 | [Ainslie et al., 2023](https://arxiv.org/abs/2305.13245) |
-| QK-Norm | Q·K를 헤드별로 RMSNorm한 뒤 RoPE를 적용 | `q_norm`, `k_norm` | [Henry et al., 2020](https://arxiv.org/abs/2010.04245) |
-| RoPE | 토큰 위치를 Q·K 벡터를 회전시키는 방식으로 넣음 | rope_theta 1e6 | [Su et al., 2021](https://arxiv.org/abs/2104.09864) |
-| SwiGLU FFN | 두 Linear 중 하나에 SiLU를 씌워 게이트로 곱함 | 중간 크기 2,432 (= ⌈768 × π / 64⌉ × 64) | [Shazeer, 2020](https://arxiv.org/abs/2002.05202) |
-| 임베딩·출력층 가중치 공유 | 입력 임베딩과 출력 Linear가 같은 행렬을 씀 | `tie_word_embeddings=True`. vocab이 9,600개 늘 때 파라미터는 7.37M만 늘어남 | [Press & Wolf, 2016](https://arxiv.org/abs/1608.05859) |
-
-### 원본에 있지만 켜지 않은 것
-
-* **Dropout**: 코드에는 있지만 확률이 0.0(원본 기본값)이라 실제로는 아무것도 하지 않습니다.
-* **YaRN** ([Peng et al., 2023](https://arxiv.org/abs/2309.00071)): 학습 길이보다 긴 문맥을 다루도록 RoPE를 보정하는 추론용 옵션입니다. `inference_rope_scaling=False`로 두었습니다.
-* **긴 문맥**: `max_position_embeddings`는 설정값 32,768이지만, 실제 학습 길이는 사전학습 512토큰, 대화 SFT 128토큰입니다.
-* **MoE**: 이 저장소의 모든 모델은 `use_moe=False`입니다.
+원본에는 같은 구조의 FFN을 MoE로 바꾼 `minimind-3-moe`도 있습니다(4 experts / top-1, shared expert 없음). 이 저장소의 모델은 모두 Dense(`use_moe=False`)입니다.
 
 <details>
 <summary>원본의 MoE 변형 (이 저장소에서는 쓰지 않음)</summary>
 
-원본에는 FFN을 여러 전문가(expert)로 나누고, 라우터가 토큰마다 그중 일부만 골라 계산하는 `minimind-3-moe`(전체 198M, 토큰당 활성 64M)도 있습니다. 원본 기본값은 전문가 4개 중 1개 선택(top-1)이고 shared expert는 없습니다. 원본 README는 이 설정이 순수 PyTorch 구현에서 Dense보다 약 50% 느리다고 설명합니다(이 저장소에서는 측정하지 않았습니다). 관련 논문: [Shazeer et al., 2017](https://arxiv.org/abs/1701.06538), top-1 라우팅 [Fedus et al., 2021](https://arxiv.org/abs/2101.03961).
+`minimind-3-moe`는 FFN을 여러 전문가(expert)로 나누고, 라우터가 토큰마다 그중 하나만 골라 계산합니다(전체 198M, 토큰당 활성 64M). 원본 README는 전문가 수를 늘릴수록 순수 PyTorch 구현에서는 토큰을 전문가별로 나눠 계산하는 부담이 커져, 기본값인 4 experts / top-1에서도 Dense보다 약 50% 느리다고 설명합니다(이 저장소에서는 측정하지 않았습니다). 관련 논문: [Shazeer et al., 2017](https://arxiv.org/abs/1701.06538), top-1 라우팅 [Fedus et al., 2021](https://arxiv.org/abs/2101.03961).
 
 <p align="center">
   <img src="images/minimind_structure_moe.jpg" alt="MiniMind MoE 모델 구조" width="90%">
@@ -147,17 +135,53 @@ SFT 뒤 대화 평가용 2,001쌍의 답 본문 BPB는 1.0958로, 기존 100만 
 
 </details>
 
-### 이 저장소에서 다룬 모델
+이 저장소의 최종 모델 구조는 아래 그림과 같습니다. 원본 구조 그림의 구성을 따라 이 저장소 모델 기준으로 다시 그렸습니다.
 
-층·차원·헤드 구성은 모두 같고, vocab 크기 차이만큼 임베딩 파라미터만 달라집니다.
+![minimind_ko 최종 모델 구조: (a) 전체 흐름, (b) Transformer 블록, (c) GQA 어텐션, (d) SwiGLU FFN과 파라미터 수](images/architecture.png)
 
-| 모델 | 파라미터 | vocab | n_layers | d_model | q_heads | kv_heads | 학습 길이 | 비고 |
-|---|---|---|---|---|---|---|---|---|
-| minimind-3 (원본 공개 모델) | 63.91M | 6,400 (원본) | 8 | 768 | 8 | 4 | – | 1단계 체험용, 직접 학습 안 함 |
-| ko 6,400 | 63.91M | 6,400 | 8 | 768 | 8 | 4 | 512 | vocab 비교용 (5만~100만 조각) |
-| ko 16,000 | 71.28M | 16,000 | 8 | 768 | 8 | 4 | 512 | vocab 비교용 (5만~100만 조각) |
-| **최종 모델** | **71.28M** | **16,000** | 8 | 768 | 8 | 4 | 512 → SFT 128 | 학습 풀 전체 × 2 epoch 사전학습 + 대화 SFT |
-| LoRA 어댑터 | +0.39M | 16,000 | 8 | 768 | 8 | 4 | 128 | rank 16, 층마다 q_proj·o_proj에만 추가 ([docs/09](docs/09_LoRA_DPO_체험.md)) |
+그림 속 숫자는 손으로 적지 않고 [scripts/plot_architecture.py](scripts/plot_architecture.py)가 원본 모델 코드와 `tokenizers/ko_16000`에서 직접 읽어 그립니다(가중치 파일 불필요). (a)의 토큰 조각은 예시 문장을 실제로 토큰화한 결과이고, (c)의 주황 점선은 [docs/09](docs/09_LoRA_DPO_체험.md)에서 LoRA(rank 16, 0.39M)를 붙인 위치입니다.
+
+모델 설정은 원본 `MiniMindConfig`의 기본값을 그대로 쓰고 `vocab_size`만 지정합니다. 이 저장소에서 다룬 모델은 아래와 같습니다(파라미터 수는 원본 모델 코드로 직접 센 값).
+
+| Model Name | params | len_vocab | max_pos | rope_theta | n_layers | d_model | kv_heads | q_heads | note |
+|---|---|---|---|---|---|---|---|---|---|
+| minimind-3 | 63.91M | 6400 | 32768 | 1e6 | 8 | 768 | 4 | 8 | 원본 공개 모델, 1단계 체험용 |
+| ko 6,400 | 63.91M | 6400 | 32768 | 1e6 | 8 | 768 | 4 | 8 | vocab 비교용 (5만~100만 조각) |
+| ko 16,000 | 71.28M | 16000 | 32768 | 1e6 | 8 | 768 | 4 | 8 | vocab 비교용 (5만~100만 조각) |
+| **최종 모델** | **71.28M** | **16000** | 32768 | 1e6 | 8 | 768 | 4 | 8 | 학습 풀 전체 × 2 epoch 사전학습 + 대화 SFT |
+
+## 모델 설정
+
+작은 LLM의 크기 설정에 대해서는 원본 README가 근거로 드는 [MobileLLM](https://arxiv.org/abs/2402.14905)이 대표적인 체계적 연구입니다. 원본은 100M 안팎의 모델에서 `d_model`과 `n_layers`를 어떻게 나누느냐가 단순한 파라미터 배분 문제가 아니라 학습 안정성과 최종 성능에도 바로 영향을 준다고 설명합니다.
+
+원본 `minimind-3`는 `dim=768, n_layers=8`을 골랐고, 이를 엔지니어링 절충으로 설명합니다. 얕은 망은 학습이 빠르고, `dim`이 너무 작지 않아 모드 붕괴(mode collapse)를 피할 수 있다는 것입니다. 이 저장소는 이 값을 그대로 썼고, 깊이·너비를 비교하는 실험은 하지 않았습니다.
+
+이 저장소에서 바꾼 것은 vocab뿐입니다. 원본 README의 Tokenizer 절은 작은 모델에서는 vocab 크기가 임베딩·출력층의 파라미터 비율을 바로 바꾸므로 vocab을 작게 유지하는 편이 낫다고 설명합니다. 실제로 이 저장소의 두 모델은 층 구성이 같아 블록 쪽 파라미터는 같고, 임베딩만 달라집니다.
+
+| vocab | 임베딩 (= 출력층) | Transformer 블록 8개 | 전체 | 전체에서 임베딩 비율 |
+|---|---|---|---|---|
+| 6,400 | 4.92M | 59.00M | 63.91M | 7.7% |
+| 16,000 | 12.29M | 59.00M | 71.28M | 17.2% |
+
+16,000은 임베딩 비율이 두 배 넘게 커지지만, 이 저장소의 데이터 양 실험에서는 100만 조각에서 검증 BPB가 근소하게 낮아 사전 규칙에 따라 16,000을 선택했습니다([결과](#-결과)). 총 파라미터를 고정하고 vocab과 층 수를 맞바꾸는 비교는 하지 않았습니다.
+
+<details>
+<summary>원본의 자세한 설명 (d_model과 n_layers)</summary>
+
+원본 README의 설명을 옮겨 정리했습니다. 이 저장소에서 확인한 내용은 아닙니다.
+
+작은 모델에서는 Scaling Law가 큰 모델과 다르게 나타나는 경우가 많습니다. Transformer의 파라미터 규모를 정하는 핵심 값은 주로 `d_model`과 `n_layers`입니다.
+
+* `d_model`↑ + `n_layers`↓ → 넓고 얕은 모델
+* `d_model`↓ + `n_layers`↑ → 좁고 깊은 모델
+
+고전적인 Scaling Law는 학습 데이터 양, 파라미터 수, 학습 스텝 수를 강조하고 구조 차이의 영향은 작게 보지만, 작은 모델 구간에서는 이 결론이 늘 맞지는 않습니다. MobileLLM의 핵심 관찰은 파라미터 수가 같을 때 너비보다 깊이가 더 중요한 경우가 많다는 것입니다. 예를 들어 125M이나 350M 모델에서 30~42층의 좁고 깊은 구조가 12층 안팎의 넓고 얕은 구조보다 상식 추론, 질의응답, 독해 등 여러 벤치마크에서 대체로 나았습니다.
+
+원본 저자는 MiniMind를 학습하며 `d_model`과 `n_layers` 배분을 실험했을 때도 같은 경향을 봤다고 적었습니다. 다만 "좁고 깊은" 쪽에도 하한이 있어, `d_model < 512`이면 임베딩 차원이 좁은 단점이 커지고, Q 헤드 수가 고정된 상태에서 헤드 크기가 작아지는 문제를 층을 늘려도 다 메우기 어렵다고 합니다. 반대로 `d_model > 1536`이면 더 넓히기보다 층을 늘리는 쪽이 파라미터 대비 효과가 더 크다고 합니다.
+
+참고로 원본은 GPT-3의 파라미터 설정 표를 함께 싣고 있습니다: [원본 그림 `images/gpt3_config.png`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/images/gpt3_config.png).
+
+</details>
 
 ---
 
@@ -266,10 +290,9 @@ scripts\run_scale.bat
 REM Ⅳ 최종 사전학습과 SFT: 학습 풀 전체 파일 → 실험 1·2, 판정, 최종 학습, 채택 판정, SFT (docs/08)
 REM    run_final.bat도 별도 창에서 오래 돈다 (이 PC에서 실험 포함 학습 약 21시간). 끊기면 다시 실행하면 이어 간다
 .venv\Scripts\python.exe -X utf8 scripts\prepare_final_data.py
-scripts
-un_final.bat
-.venv\Scripts\python.exe -X utf8 scriptsinal_demo.py select
-.venv\Scripts\python.exe -X utf8 scriptsinal_demo.py generate
+scripts\run_final.bat
+.venv\Scripts\python.exe -X utf8 scripts\final_demo.py select
+.venv\Scripts\python.exe -X utf8 scripts\final_demo.py generate
 .venv\Scripts\python.exe -X utf8 scripts\chat_ko.py
 
 REM 단위 테스트 (데이터 분할, 판정, 실행기)
@@ -334,7 +357,7 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 * 실행 환경: Windows 11, NVIDIA RTX 5050 Laptop (VRAM 8GB, Compute Capability 12.0), Python 3.11(uv), PyTorch 2.11.0 + CUDA 12.8, 원본 MiniMind 커밋 [`233d00f`](https://github.com/jingyaogong/minimind/commit/233d00fa068ec2b8c0d4f07b703934d6391a5a73) (2026-10-27). PC 사양과 설치 과정은 [docs/01](docs/01_환경구성.md)에 있습니다.
 * 노트북에서 학습이 갑자기 느려지면 `nvidia-smi -q -d POWER`로 GPU 전력 상한을 확인하세요. 이 PC는 Windows 전원 모드와 상관없이, 제조사 성능 모드가 아니면 GPU 전력이 21W로 묶였습니다 ([docs/04](docs/04_한국어_사전학습.md#겪은-문제)).
 * 학습 중 `CUDA error: out of memory`가 났는데 GPU 메모리에 여유가 있었다면 Windows 가상 메모리(커밋) 부족일 수 있습니다. 이 PC에서는 다른 프로그램을 많이 켜 둔 상태에서 vocab 16,000의 100만 조각 학습이 한 번 멈췄고(같은 시각 Windows 이벤트 로그에 가상 메모리 부족이 기록됨), 데이터 로더 작업 프로세스를 없애(`--num_workers 0`) 처음부터 다시 학습했습니다 ([docs/06](docs/06_데이터양_비교.md#실험-조건)).
-* 노트북은 충전기를 꽂아 두어도 GPU 학습 중에는 배터리가 줄 수 있습니다. 이 PC에서는 최종 사전학습 중 시간당 4~9%씩 줄어, 배터리 25% 이하에서 학습을 멈추고 충전 뒤 이어 가는 `scriptsattery_guard.bat`을 함께 띄웠습니다 ([docs/08](docs/08_최종_사전학습과_SFT.md#진행-중-있었던-일)).
+* 노트북은 충전기를 꽂아 두어도 GPU 학습 중에는 배터리가 줄 수 있습니다. 이 PC에서는 최종 사전학습 중 시간당 4~9%씩 줄어, 배터리 25% 이하에서 학습을 멈추고 충전 뒤 이어 가는 `scripts\battery_guard.bat`을 함께 띄웠습니다 ([docs/08](docs/08_최종_사전학습과_SFT.md#진행-중-있었던-일)).
 * 몇 시간씩 걸리는 학습 전에는 Windows 업데이트의 자동 다시 시작을 미뤄 두세요. 이 PC에서는 vocab 16,000의 100만 조각 학습 도중 업데이트 재시작으로 학습이 한 번 끊겼습니다. 끊겨도 `scripts\run_scale.bat`을 다시 실행하면 마지막 체크포인트(1,000 step마다 저장)에서 이어서 학습합니다 ([docs/06](docs/06_데이터양_비교.md#실험-조건)).
 
 | 학습 | 데이터 | 시간 (6,400 / 16,000) | GPU 메모리 (6,400 / 16,000) |
