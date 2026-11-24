@@ -163,7 +163,7 @@ None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be ava
 | 3-2 | 데이터를 늘리면 결과가 뒤집힐까? (5만 ~ 100만 조각) | ✅ 100만에서 16,000이 앞서 사전 규칙에 따라 16,000 선택 | [docs/06](docs/06_데이터양_비교.md) |
 | 3-3 | 같은 대화 데이터로 SFT해도 6,400이 더 나은 답을 낼까? | ✅ BPB는 6,400 근소 우세, 블라인드 생성 비교(LLM 평가자 1명)는 16,000 우세(62 대 41) → 사전 규칙에 따라 16,000 유지 | [docs/07](docs/07_대화_SFT_비교.md) |
 | 4 | 선택한 토크나이저로 최종 사전학습 후 한국어 대화 학습(SFT) | ✅ 패킹은 채택 안 함, 2 epoch 채택 → 학습 풀 전체 × 2 epoch, 위키 검증 BPB 1.0080 → 0.9432. 대화 SFT와 README 대화 예시 | [docs/08](docs/08_최종_사전학습과_SFT.md) |
-| 5 | (선택) LoRA, DPO 체험 | ⏳ 예정 | |
+| 5 | LoRA, DPO를 직접 해 보면 모델이 어떻게 바뀔까? | ✅ LoRA(전체의 0.55%)로 자기소개를 배웠지만 일반 대화에도 자기소개로 답함, DPO로 겨냥한 상투 답은 0이 됐지만 다른 상투 답과 긴 반복 답이 생김 | [docs/09](docs/09_LoRA_DPO_체험.md) |
 
 ---
 
@@ -211,7 +211,8 @@ scripts\run_scale.bat
 REM Ⅳ 최종 사전학습과 SFT: 학습 풀 전체 파일 → 실험 1·2, 판정, 최종 학습, 채택 판정, SFT (docs/08)
 REM    run_final.bat도 별도 창에서 오래 돈다 (이 PC에서 실험 포함 학습 약 21시간). 끊기면 다시 실행하면 이어 간다
 .venv\Scripts\python.exe -X utf8 scripts\prepare_final_data.py
-scriptsun_final.bat
+scripts
+un_final.bat
 .venv\Scripts\python.exe -X utf8 scriptsinal_demo.py select
 .venv\Scripts\python.exe -X utf8 scriptsinal_demo.py generate
 .venv\Scripts\python.exe -X utf8 scripts\chat_ko.py
@@ -262,6 +263,9 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | [battery_guard.py](scripts/battery_guard.py) / [battery_guard.bat](scripts/battery_guard.bat) | `minimind_ko` | 노트북 배터리 지킴이: 사전학습 중 배터리 25% 이하면 실행기를 멈추고 90%에서 다시 띄움 (docs/08) |
 | [final_demo.py](scripts/final_demo.py) | `minimind_ko` | README 대화 예시: 질문 고정(답 생성 전), 생성과 200문항 자동 집계 (docs/08) |
 | [chat_ko.py](scripts/chat_ko.py) | `minimind_ko` | 콘솔에서 한국어 SFT 모델과 대화 (greedy) (docs/08) |
+| [train_lora_ko.py](scripts/train_lora_ko.py) | `minimind_ko` | 원본 LoRA 학습 루프로 자기소개 LoRA 학습 (docs/09) |
+| [make_dpo_data.py](scripts/make_dpo_data.py) / [train_dpo_ko.py](scripts/train_dpo_ko.py) | `minimind_ko` | 모델의 상투 답을 나쁜 답으로 하는 DPO 쌍 만들기, 원본 DPO 학습 루프로 DPO 학습 (docs/09) |
+| [eval_lora_dpo.py](scripts/eval_lora_dpo.py) | `minimind_ko` | LoRA·DPO 측정: 자기소개, 200문항 집계, 대화 BPB, 데모 10문항 (docs/09) |
 
 </details>
 
@@ -284,6 +288,7 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | 첫 비교 실험 ([docs/04](docs/04_한국어_사전학습.md), [05](docs/05_vocab_비교.md)) | 위키 10만 조각 | 약 35분 / 약 52분 ※ | 약 5,300MiB / 약 6,800MiB |
 | 데이터 양 실험 ([docs/06](docs/06_데이터양_비교.md)) | 위키 5만 / 10만 / 20만 / 40만 / 100만 조각 | 5만: 20분 / 21분<br>10만: 39분 / 43분<br>20만: 1.3시간 / 1.4시간<br>40만: 2.6시간 / 2.8시간<br>100만: 6.6시간 / 7.2시간 (끊긴 뒤 이어서 학습한 구간 합) | 약 5,300MiB / 약 6,800MiB (100만 학습 중 측정) |
 | 최종 사전학습과 SFT ([docs/08](docs/08_최종_사전학습과_SFT.md)) | 패킹 40만, 20만 × 2 epoch, 학습 풀 전체 118만 × 2 epoch, 대화 9,749쌍 (16,000만) | 패킹 실험 1.4시간, 2 epoch 실험 2.9시간, 최종 사전학습 16.4시간 (끊긴 뒤 이어서 학습한 구간 합), SFT 4분 | 측정 안 함 |
+| LoRA·DPO 체험 ([docs/09](docs/09_LoRA_DPO_체험.md)) | 자기소개 48쌍, DPO 3,083쌍 (16,000만) | LoRA 각 1분 안쪽, DPO 데이터 생성 15분 + 학습 1분 | 측정 안 함 |
 
 * GPU 메모리는 학습 중 nvidia-smi로 본 GPU 전체 사용량입니다.
 * ※ 첫 비교 실험의 16,000 학습 시간은 도중에 GPU 전력 제한(21W)으로 느려진 구간이 섞인 참고치입니다. 두 학습이 모두 성능 모드였던 같은 구간의 step당 시간은 6,400 0.335초, 16,000 0.362초입니다 ([docs/05](docs/05_vocab_비교.md#실험-조건)).
@@ -329,6 +334,7 @@ minimind_ko/
 ├── out_scale/             데이터 양 실험 가중치·상태 파일   (git 제외)
 ├── out_sft/               대화 SFT 비교 가중치(07)          (git 제외)
 ├── out_final/             최종 사전학습·SFT 가중치·판정(08) (git 제외)
+├── out_lora/, out_dpo/    LoRA·DPO 가중치(09)               (git 제외)
 ├── minimind/              원본 저장소                      (git 제외)
 └── .venv/                 가상환경                         (git 제외)
 ```
@@ -346,7 +352,7 @@ minimind_ko/
 | 언어 | 중국어·영어 위주 | 한국어 전용 |
 | 토크나이저 | 원본 데이터로 학습한 vocab 6,400 | 한국어 위키백과로 직접 학습한 vocab 6,400 / 16,000 |
 | 학습 데이터 | 원본 저자가 공개한 데이터셋 | 한국어 위키백과 (직접 전처리) |
-| 진행 범위 | 사전학습부터 SFT, LoRA, DPO 등 전 과정 | 사전학습, vocab 비교, 최종 사전학습과 대화 SFT까지 |
+| 진행 범위 | 사전학습부터 SFT, LoRA, DPO 등 전 과정 | 사전학습, vocab 비교, 최종 사전학습과 대화 SFT, LoRA·DPO 체험 |
 
 원본에서 가져오거나 원본에 기대고 있는 것은 다음과 같습니다.
 

@@ -164,7 +164,7 @@ Each step is recorded in [docs/](docs) (Korean) with commands, results, lessons 
 | 3-2 | Does the result flip with more data? (50k to 1M chunks) | ✅ 16,000 led at 1M and was selected under the rule set before seeing the 1M results | [docs/06](docs/06_데이터양_비교.md) (Korean) |
 | 3-3 | After SFT on the same chat data, does 6,400 still give better answers? | ✅ BPB slightly favored 6,400, the blind generation comparison (one LLM judge) favored 16,000 (62 vs 41) → 16,000 kept under the rule set before the results | [docs/07](docs/07_대화_SFT_비교.md) (Korean) |
 | 4 | Final pretraining with the selected tokenizer, then Korean chat training (SFT) | ✅ Packing not adopted, 2 epochs adopted → whole training pool × 2 epochs, Wikipedia validation BPB 1.0080 → 0.9432. Chat SFT and the README chat examples | [docs/08](docs/08_최종_사전학습과_SFT.md) (Korean) |
-| 5 | (Optional) LoRA, DPO | ⏳ Planned | |
+| 5 | How do LoRA and DPO change the model when tried by hand? | ✅ LoRA (0.55% of the parameters) learned a self-introduction but then answered ordinary chat with it too; DPO removed the targeted stock answers but produced other stock answers and long repeating answers | [docs/09](docs/09_LoRA_DPO_체험.md) (Korean) |
 
 ---
 
@@ -263,6 +263,9 @@ Every script has usage instructions in its top docstring (Korean). The working d
 | [battery_guard.py](scripts/battery_guard.py) / [battery_guard.bat](scripts/battery_guard.bat) | `minimind_ko` | Laptop battery guard: stops the runner when the battery falls to 25% during pretraining and relaunches it at 90% (docs/08) |
 | [final_demo.py](scripts/final_demo.py) | `minimind_ko` | README chat examples: fixes the questions before generation, then generates and counts the 200-item statistics (docs/08) |
 | [chat_ko.py](scripts/chat_ko.py) | `minimind_ko` | Chat with the Korean SFT model in the console (greedy) (docs/08) |
+| [train_lora_ko.py](scripts/train_lora_ko.py) | `minimind_ko` | Self-introduction LoRA with the original LoRA training loop (docs/09) |
+| [make_dpo_data.py](scripts/make_dpo_data.py) / [train_dpo_ko.py](scripts/train_dpo_ko.py) | `minimind_ko` | Builds DPO pairs with the model's own stock answers as the rejected side, and trains DPO with the original DPO loop (docs/09) |
+| [eval_lora_dpo.py](scripts/eval_lora_dpo.py) | `minimind_ko` | LoRA and DPO measurements: self-introduction, 200-item counts, chat BPB, the 10 demo questions (docs/09) |
 
 </details>
 
@@ -285,6 +288,7 @@ This repository is a study log. The resulting models are not meant for real use,
 | First comparison ([docs/04](docs/04_한국어_사전학습.md), [05](docs/05_vocab_비교.md)) | 100k Wikipedia chunks | about 35 min / about 52 min ※ | about 5,300MiB / about 6,800MiB |
 | Data-scale experiment ([docs/06](docs/06_데이터양_비교.md)) | 50k / 100k / 200k / 400k / 1M Wikipedia chunks | 50k: 20 min / 21 min<br>100k: 39 min / 43 min<br>200k: 1.3 h / 1.4 h<br>400k: 2.6 h / 2.8 h<br>1M: 6.6 h / 7.2 h (sum of resumed segments) | about 5,300MiB / about 6,800MiB (measured during the 1M runs) |
 | Final pretraining and SFT ([docs/08](docs/08_최종_사전학습과_SFT.md)) | packing 400k, 200k × 2 epochs, whole pool 1.18M × 2 epochs, 9,749 chat pairs (16,000 only) | packing experiment 1.4 h, 2-epoch experiment 2.9 h, final pretraining 16.4 h (sum of resumed segments), SFT 4 min | not measured |
+| LoRA and DPO trial ([docs/09](docs/09_LoRA_DPO_체험.md)) | 48 self-introduction pairs, 3,083 DPO pairs (16,000 only) | LoRA under 1 min each, DPO data generation 15 min + training 1 min | not measured |
 
 * GPU memory is the total GPU usage seen with nvidia-smi during training. The linked documents are in Korean.
 * ※ The 16,000 training time in the first comparison includes a stretch slowed down by the GPU power limit (21W), so it is only a reference. In the same stretch where both runs were in performance mode, the time per step was 0.335 s for 6,400 and 0.362 s for 16,000 ([docs/05](docs/05_vocab_비교.md#실험-조건), Korean).
@@ -330,6 +334,7 @@ minimind_ko/
 ├── out_scale/             Weights and status of the data-scale runs    (not in git)
 ├── out_sft/               Weights of the chat SFT comparison (07)      (not in git)
 ├── out_final/             Final pretraining/SFT weights, decisions (08) (not in git)
+├── out_lora/, out_dpo/    LoRA and DPO weights (09)                   (not in git)
 ├── minimind/              Original repository                          (not in git)
 └── .venv/                 Virtual environment                          (not in git)
 ```
@@ -347,7 +352,7 @@ This repository is a personal study log based on [jingyaogong/minimind](https://
 | Language | Mainly Chinese and English | Korean only |
 | Tokenizer | vocab 6,400, trained on the original data | vocab 6,400 / 16,000, trained here on Korean Wikipedia |
 | Training data | Datasets released by the original author | Korean Wikipedia (preprocessed here) |
-| Scope | The whole pipeline from pretraining to SFT, LoRA, DPO and more | Pretraining, the vocab comparison, final pretraining and chat SFT |
+| Scope | The whole pipeline from pretraining to SFT, LoRA, DPO and more | Pretraining, the vocab comparison, final pretraining and chat SFT, a LoRA and DPO trial |
 
 What comes from, or depends on, the original:
 

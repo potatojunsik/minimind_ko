@@ -1,0 +1,24 @@
+init: out_final/sft/sft_ko16000_768.pth | LoRA rank 16 | LoRA 파라미터 393,216 / 전체 71,678,208 (0.55%)
+학습 쌍 48개
+첫 배치 채점 위치 확인: 16쌍 모두 답 본문 + <|im_end|> + 줄바꿈만 채점. 예: '정체가 뭐야?' → '저는 MiniMind 구조로 만든 한국어 언어 모델이에요.'
+Epoch:[1/20](3/3), loss: 4.6528, logits_loss: 4.6528, aux_loss: 0.0000, lr: 0.00099446, epoch_time: 0.0min
+Epoch:[2/20](3/3), loss: 4.2009, logits_loss: 4.2009, aux_loss: 0.0000, lr: 0.00097798, epoch_time: 0.0min
+Epoch:[3/20](3/3), loss: 3.7677, logits_loss: 3.7677, aux_loss: 0.0000, lr: 0.00095095, epoch_time: 0.0min
+Epoch:[4/20](3/3), loss: 3.2607, logits_loss: 3.2607, aux_loss: 0.0000, lr: 0.00091406, epoch_time: 0.0min
+Epoch:[5/20](3/3), loss: 2.8703, logits_loss: 2.8703, aux_loss: 0.0000, lr: 0.00086820, epoch_time: 0.0min
+Epoch:[6/20](3/3), loss: 2.5135, logits_loss: 2.5135, aux_loss: 0.0000, lr: 0.00081450, epoch_time: 0.0min
+Epoch:[7/20](3/3), loss: 2.6445, logits_loss: 2.6445, aux_loss: 0.0000, lr: 0.00075430, epoch_time: 0.0min
+Epoch:[8/20](3/3), loss: 2.2817, logits_loss: 2.2817, aux_loss: 0.0000, lr: 0.00068906, epoch_time: 0.0min
+Epoch:[9/20](3/3), loss: 2.0181, logits_loss: 2.0181, aux_loss: 0.0000, lr: 0.00062040, epoch_time: 0.0min
+Epoch:[10/20](3/3), loss: 2.1914, logits_loss: 2.1914, aux_loss: 0.0000, lr: 0.00055000, epoch_time: 0.0min
+Epoch:[11/20](3/3), loss: 1.8202, logits_loss: 1.8202, aux_loss: 0.0000, lr: 0.00047960, epoch_time: 0.0min
+Epoch:[12/20](3/3), loss: 1.8881, logits_loss: 1.8881, aux_loss: 0.0000, lr: 0.00041094, epoch_time: 0.0min
+Epoch:[13/20](3/3), loss: 1.8857, logits_loss: 1.8857, aux_loss: 0.0000, lr: 0.00034570, epoch_time: 0.0min
+Epoch:[14/20](3/3), loss: 1.8689, logits_loss: 1.8689, aux_loss: 0.0000, lr: 0.00028550, epoch_time: 0.0min
+Epoch:[15/20](3/3), loss: 1.8999, logits_loss: 1.8999, aux_loss: 0.0000, lr: 0.00023180, epoch_time: 0.0min
+Epoch:[16/20](3/3), loss: 2.0088, logits_loss: 2.0088, aux_loss: 0.0000, lr: 0.00018594, epoch_time: 0.0min
+Epoch:[17/20](3/3), loss: 1.5911, logits_loss: 1.5911, aux_loss: 0.0000, lr: 0.00014905, epoch_time: 0.0min
+Epoch:[18/20](3/3), loss: 1.7990, logits_loss: 1.7990, aux_loss: 0.0000, lr: 0.00012202, epoch_time: 0.0min
+Epoch:[19/20](3/3), loss: 1.7110, logits_loss: 1.7110, aux_loss: 0.0000, lr: 0.00010554, epoch_time: 0.0min
+Epoch:[20/20](3/3), loss: 1.5556, logits_loss: 1.5556, aux_loss: 0.0000, lr: 0.00010000, epoch_time: 0.0min
+완료: D:\minimind_ko\out_lora\lora_identity_ko_768.pth

@@ -1,0 +1,22 @@
+init: out_final/sft/sft_ko16000_768.pth | DPO 쌍 3,083개 | beta 0.1 | lr 1e-06
+Epoch:[1/1](20/386), loss: 0.6098, dpo_loss: 0.6098, aux_loss: 0.0000, learning_rate: 0.00000099, epoch_time: 1.000min
+Epoch:[1/1](40/386), loss: 0.4349, dpo_loss: 0.4349, aux_loss: 0.0000, learning_rate: 0.00000098, epoch_time: 0.000min
+Epoch:[1/1](60/386), loss: 0.4623, dpo_loss: 0.4623, aux_loss: 0.0000, learning_rate: 0.00000095, epoch_time: 0.000min
+Epoch:[1/1](80/386), loss: 0.3813, dpo_loss: 0.3813, aux_loss: 0.0000, learning_rate: 0.00000091, epoch_time: 0.000min
+Epoch:[1/1](100/386), loss: 0.3506, dpo_loss: 0.3506, aux_loss: 0.0000, learning_rate: 0.00000086, epoch_time: 0.000min
+Epoch:[1/1](120/386), loss: 0.3329, dpo_loss: 0.3329, aux_loss: 0.0000, learning_rate: 0.00000080, epoch_time: 0.000min
+Epoch:[1/1](140/386), loss: 0.3059, dpo_loss: 0.3059, aux_loss: 0.0000, learning_rate: 0.00000074, epoch_time: 0.000min
+Epoch:[1/1](160/386), loss: 0.1683, dpo_loss: 0.1683, aux_loss: 0.0000, learning_rate: 0.00000067, epoch_time: 0.000min
+Epoch:[1/1](180/386), loss: 0.3304, dpo_loss: 0.3304, aux_loss: 0.0000, learning_rate: 0.00000060, epoch_time: 0.000min
+Epoch:[1/1](200/386), loss: 0.2846, dpo_loss: 0.2846, aux_loss: 0.0000, learning_rate: 0.00000052, epoch_time: 0.000min
+Epoch:[1/1](220/386), loss: 0.2867, dpo_loss: 0.2867, aux_loss: 0.0000, learning_rate: 0.00000045, epoch_time: 0.000min
+Epoch:[1/1](240/386), loss: 0.1060, dpo_loss: 0.1060, aux_loss: 0.0000, learning_rate: 0.00000038, epoch_time: 0.000min
+Epoch:[1/1](260/386), loss: 0.2577, dpo_loss: 0.2577, aux_loss: 0.0000, learning_rate: 0.00000032, epoch_time: 0.000min
+Epoch:[1/1](280/386), loss: 0.2583, dpo_loss: 0.2583, aux_loss: 0.0000, learning_rate: 0.00000026, epoch_time: 0.000min
+Epoch:[1/1](300/386), loss: 0.2618, dpo_loss: 0.2618, aux_loss: 0.0000, learning_rate: 0.00000021, epoch_time: 0.000min
+Epoch:[1/1](320/386), loss: 0.2135, dpo_loss: 0.2135, aux_loss: 0.0000, learning_rate: 0.00000016, epoch_time: 0.000min
+Epoch:[1/1](340/386), loss: 0.1462, dpo_loss: 0.1462, aux_loss: 0.0000, learning_rate: 0.00000013, epoch_time: 0.000min
+Epoch:[1/1](360/386), loss: 0.2306, dpo_loss: 0.2306, aux_loss: 0.0000, learning_rate: 0.00000011, epoch_time: 0.000min
+Epoch:[1/1](380/386), loss: 0.1838, dpo_loss: 0.1838, aux_loss: 0.0000, learning_rate: 0.00000010, epoch_time: 0.000min
+Epoch:[1/1](386/386), loss: 0.0443, dpo_loss: 0.0443, aux_loss: 0.0000, learning_rate: 0.00000010, epoch_time: 0.000min
+완료: D:\minimind_ko\out_dpo\dpo_ko16000_768.pth

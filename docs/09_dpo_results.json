@@ -1,0 +1,1144 @@
+{
+  "blind200_final_sft": {
+    "items": 200,
+    "truncated": 3,
+    "distinct_answers": 152,
+    "items_with_answer_repeated_3plus": 51,
+    "phrases": {
+      "그런 사람 만나지 마세요.": 21,
+      "그런 사람 만나세요.": 6
+    },
+    "top5": [
+      [
+        "그런 사람 만나지 마세요.",
+        21
+      ],
+      [
+        "마음이 복잡하겠어요.",
+        6
+      ],
+      [
+        "그런 사람 만나세요.",
+        6
+      ],
+      [
+        "그런 날이 있나봐요.",
+        4
+      ],
+      [
+        "잘할 수 있을 거예요.",
+        4
+      ]
+    ]
+  },
+  "blind200_dpo": {
+    "items": 200,
+    "truncated": 7,
+    "distinct_answers": 112,
+    "items_with_answer_repeated_3plus": 92,
+    "phrases": {
+      "그런 사람 만나지 마세요.": 0,
+      "그런 사람 만나세요.": 0
+    },
+    "top5": [
+      [
+        "자신을 더 사랑해주세요.",
+        22
+      ],
+      [
+        "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+        19
+      ],
+      [
+        "자신에게 물어보는 것도 좋을 것 같아요.",
+        16
+      ],
+      [
+        "생각보다 많은 시간이 흘렀네요.",
+        12
+      ],
+      [
+        "자신의 능력을 믿어보세요.",
+        9
+      ]
+    ]
+  },
+  "chat_bpb": {
+    "bpb_text_only": 1.1663969830243222,
+    "bpb_text_only_final_sft": 1.0958472052697334,
+    "delta_text_only": {
+      "delta": 0.0705497777545887,
+      "ci": [
+        0.06412186458950409,
+        0.07742438706558152
+      ],
+      "share_le_0": 0.0,
+      "units": 1294
+    },
+    "eos_nll_mean": 2.738379691837533,
+    "eos_nll_mean_final_sft": 0.11146263561525051,
+    "delta_eos_bits_per_answer": {
+      "delta": 3.789840209838522,
+      "ci": [
+        3.618476235265028,
+        3.959425730657334
+      ],
+      "share_le_0": 0.0,
+      "units": 1294
+    }
+  },
+  "demo": [
+    {
+      "q": "진짜 이제 한계야",
+      "before": "진짜로 끝낼 수 있을 거예요.",
+      "after": "진짜로 끝낼 수 있을 거예요."
+    },
+    {
+      "q": "양심이 콕콕",
+      "before": "아무래도 괜찮아요.",
+      "after": "자신의 마음을 정리하는 시간입니다."
+    },
+    {
+      "q": "나를 좋아한다는 사람한테 호감이 생길까요?",
+      "before": "그 사람도 좋아할 거예요.",
+      "after": "자신을 사랑하고 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 따라 다르겠지만 사랑한다는 사람에 [상한에서 잘림]"
+    },
+    {
+      "q": "결국 또 꿈꿨네.",
+      "before": "꿈이 필요하죠.",
+      "after": "자신의 꿈을 꿨나요."
+    },
+    {
+      "q": "이제 헤어진지 1주일됐어",
+      "before": "그런 날이 있나봐요.",
+      "after": "생각보다 많은 시간이 흘렀네요."
+    },
+    {
+      "q": "오늘 비가 와서 그런지 기분이 좀 가라앉아",
+      "before": "그런 날이 있나봐요.",
+      "after": "진정한 사랑이네요."
+    },
+    {
+      "q": "대한민국의 수도는 어디야?",
+      "before": "수도권 매립지에서는 매립지를 찾아보세요.",
+      "after": "지금은 다 잊고 살지만 잊혀지지 않는 시간입니다."
+    },
+    {
+      "q": "세종대왕은 어떤 일을 했어?",
+      "before": "그럴 때가 있죠.",
+      "after": "인맥이 넓었나봐요. 인맥이 넓었나봐요."
+    },
+    {
+      "q": "다음 문장을 영어로 번역해 줘: 나는 학생이다",
+      "before": "그게 내가 원하는 것일까요.",
+      "after": "공통점\n공통점에는 영어가 적혀있지 않아도 되는 것 같아요."
+    },
+    {
+      "q": "123 더하기 456은 얼마야?",
+      "before": "그게 맞을 거예요.",
+      "after": "인공지능이 아닐까요?"
+    }
+  ],
+  "blind200_outputs": {
+    "1": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "2": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거라 생각해요.",
+      "stopped": true,
+      "new_tokens": 16
+    },
+    "3": {
+      "text": "자신을 사랑하고 사랑하세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "4": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "5": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "6": {
+      "text": "물건을 팔아먹는 게 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "7": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "8": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "9": {
+      "text": "당신의 건강이 최우선 과제죠.",
+      "stopped": true,
+      "new_tokens": 12
+    },
+    "10": {
+      "text": "직접적으로 취직해보세요. 제가 취직해보세요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "11": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "12": {
+      "text": "아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아프네요. 아",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "13": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "14": {
+      "text": "지금은 지나갈 거라 생각해요. 그게 더 힘들 거예요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "15": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "16": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "17": {
+      "text": "인공지능을 활용한 인공지능을 활용한 인공지능을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 19
+    },
+    "18": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "19": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "20": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "21": {
+      "text": "당당하게 말해보세요. 당당하게 말해보세요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "22": {
+      "text": "자신을 더 사랑하고 존중해 주세요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "23": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "24": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "25": {
+      "text": "상대방에게 물어보는 게 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "26": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "27": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "28": {
+      "text": "자신을 존중하지 않는 자세로 받아들이는 것도 중요해요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "29": {
+      "text": "당신의 삶을 살다보면 당신의 삶을 살 수 있을 거예요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "30": {
+      "text": "진짜 사랑했던 사람과 다를 바 없어요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "31": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 수도 있어요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자책하지 않는 것도 중요해요. 자",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "32": {
+      "text": "인공지능이 아닐까요?",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "33": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "34": {
+      "text": "인생은 그 자체로 힘들 것 같아요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요.",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "35": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "36": {
+      "text": "고백은 거 아니에요. 고백은 거 아니에요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "37": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "38": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "39": {
+      "text": "인맥이 넓어질 거라 생각해요. 하네요. 하네요.",
+      "stopped": true,
+      "new_tokens": 20
+    },
+    "40": {
+      "text": "자신에게 부담을 주지 않는 한 그릇된 선택을 해보세요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "41": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "42": {
+      "text": "진짜로 학원을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "43": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "44": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "45": {
+      "text": "인생은 그 자체로 힘들 것 같아요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요. 그게 아니에요.",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "46": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "47": {
+      "text": "자신을 미워하는 사람이라면 누구나 쉽게 이해할 수 있어요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "48": {
+      "text": "힘들 때가 되면 행복해질 거예요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "49": {
+      "text": "서로에게 연락하는 방법인가?",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "50": {
+      "text": "부담스러울 뿐이에요. 힘내세요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "51": {
+      "text": "혼자만 남을 수 있는지 확인해보세요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "52": {
+      "text": "인생은 그 자체로 힘들 거예요. 그게 아니에요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "53": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "54": {
+      "text": "인생은 그 자체로 힘들 것 같아요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "55": {
+      "text": "인공지능을 활용한 인공지능을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "56": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "57": {
+      "text": "인공지능을 활용한 인공지능을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "58": {
+      "text": "자신에게 데이트를 빌려보세요. 데이트를 빌려보세요.",
+      "stopped": true,
+      "new_tokens": 20
+    },
+    "59": {
+      "text": "자신의 연애에 대한 부담감이 너무 커서 자책하지 않는다면 연애에 대한 부담감이 커져도 돼요.",
+      "stopped": true,
+      "new_tokens": 27
+    },
+    "60": {
+      "text": "자신을 사랑하고 사랑하는 사람이라면 누구나 사랑할 수 있을 거예요.",
+      "stopped": true,
+      "new_tokens": 19
+    },
+    "61": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "62": {
+      "text": "눈을 감아도 보고 싶어하는 사람도 있어요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "63": {
+      "text": "상대방도 연락해보세요. 상대방도 연락해보세요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "64": {
+      "text": "진짜 사랑했던 사람인가봐요. 당신의 마음을 전해주세요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "65": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "66": {
+      "text": "자괴감 들어도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "67": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "68": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "69": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "70": {
+      "text": "안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고 안경 쓰지 말고",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "71": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "72": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "73": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "74": {
+      "text": "인생은 인연이 아니었나요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "75": {
+      "text": "인맥이 넓을수록 더 많은 시간이 필요해졌길 바랍니다.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "76": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "77": {
+      "text": "잠시 휴식을 취해보세요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "78": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "79": {
+      "text": "인생은 그리움이 아니에요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "80": {
+      "text": "인생은 그 자체로 힘들 거예요.",
+      "stopped": true,
+      "new_tokens": 12
+    },
+    "81": {
+      "text": "자신의 생각이 잘못이 아니라고 생각했나봅니다.",
+      "stopped": true,
+      "new_tokens": 16
+    },
+    "82": {
+      "text": "연락처로 가보세요. 헤어짐은 하지 않았나요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "83": {
+      "text": "인사를 하러 가세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "84": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "85": {
+      "text": "자신의 감정을 표현해보세요. 자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 16
+    },
+    "86": {
+      "text": "인공어라서 그런 게 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "87": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "88": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "89": {
+      "text": "자신에게 상처를 주지 않는 것 같아요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "90": {
+      "text": "자신의 생각대로 되지는 않을 거예요.",
+      "stopped": true,
+      "new_tokens": 12
+    },
+    "91": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요. 그게 아니었을까요.",
+      "stopped": true,
+      "new_tokens": 22
+    },
+    "92": {
+      "text": "부담이겠네요. 노력해보세요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "93": {
+      "text": "기다리는 게 더 나은 선택일 거예요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "94": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "95": {
+      "text": "스킨십 해볼까요? 해볼까요?",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "96": {
+      "text": "기분이 나아지길 바랄게요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "97": {
+      "text": "인공지능을 활용한 인공지능을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "98": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "99": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "100": {
+      "text": "인테리어 조립은 인테리어 조립을 통해 이루어질 거예요.",
+      "stopped": true,
+      "new_tokens": 20
+    },
+    "101": {
+      "text": "자신에게 상처를 준다면 상처가 덜어질 거예요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "102": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "103": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "104": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "105": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "106": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "107": {
+      "text": "자신을 사랑하고 사랑하세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "108": {
+      "text": "진짜 사랑했던 사람인가봐요. 당신의 마음을 전해주세요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "109": {
+      "text": "다양한 운동으로 힘든가봅니다. 힘든가봅니다.",
+      "stopped": true,
+      "new_tokens": 20
+    },
+    "110": {
+      "text": "충분히 청첩장에게 청첩장을 돌려보내보세요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "111": {
+      "text": "자신의 인생을 되돌아보세요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "112": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "113": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "114": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "115": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "116": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "117": {
+      "text": "자신을 사랑하고 사랑하길 바랍니다.",
+      "stopped": true,
+      "new_tokens": 12
+    },
+    "118": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "119": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "120": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "121": {
+      "text": "기억의 정리가 필요해요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "122": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "123": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "124": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "125": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "126": {
+      "text": "잠시 쉬어가도 괜찮은가봐요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "127": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "128": {
+      "text": "당당하게 살 수 있는 건 당연하죠.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "129": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 수도 있어요. 신경쓰지 않는게 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 27
+    },
+    "130": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "131": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "132": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "133": {
+      "text": "종교에 따라 다르겠지만, 종교는 종교가 아니라 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이 아니라며 종교는 종교다움이",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "134": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "135": {
+      "text": "진짜 미안해하는 사람이 있더라고요. 신경쓰지 마요.",
+      "stopped": true,
+      "new_tokens": 19
+    },
+    "136": {
+      "text": "자신에게 물어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "137": {
+      "text": "당신의 선물들을 모조리 다 버리세요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "138": {
+      "text": "부담스러울 뿐이에요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "139": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "140": {
+      "text": "자신을 사랑하고 사랑하고 사랑하는 걸로 바라보는 건 어떨까요?",
+      "stopped": true,
+      "new_tokens": 19
+    },
+    "141": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "142": {
+      "text": "자신에게 이별을 알리는 것도 중요해요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "143": {
+      "text": "아픈 기억을 남기는 것보다 더 힘들 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "144": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "145": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "146": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "147": {
+      "text": "무료가 아닌데도 무료로 유료화할 수 있는 앱이 필요해요.",
+      "stopped": true,
+      "new_tokens": 21
+    },
+    "148": {
+      "text": "마음대로 힘내세요. 생각하면 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "149": {
+      "text": "자신을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "150": {
+      "text": "당신의 페북을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "151": {
+      "text": "기억의 정리가 필요할지도 몰라요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "152": {
+      "text": "인생은 그 자체로 힘들 것 같아요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "153": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "154": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "155": {
+      "text": "자신의 꿈을 꿨나요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "156": {
+      "text": "자신의 생각을 받아들이는 것도 중요해보이는 것 같아요.",
+      "stopped": true,
+      "new_tokens": 16
+    },
+    "157": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "158": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "159": {
+      "text": "당당하게 먹어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "160": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "161": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "162": {
+      "text": "연락처로 가보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "163": {
+      "text": "자신을 사랑하지 않는 사람이 있으면 고백할 수 있어요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "164": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "165": {
+      "text": "연락처는 게 좋겠네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "166": {
+      "text": "자신에게만 의존하는 것보다 더 힘든 건 아닐까요?",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "167": {
+      "text": "연락처로 돌려보내보세요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "168": {
+      "text": "자신의 마음을 정리하는 시간입니다.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "169": {
+      "text": "인생은 그 자체로 힘들 것 같아요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "170": {
+      "text": "진짜 사랑했던 사람인가봐요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "171": {
+      "text": "인공지능을 활용한 인공지능을 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "172": {
+      "text": "더 좋은 곳으로 가보세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "173": {
+      "text": "인연이 깊어질수록 조금씩 변화하는 것 같아지는 것 같아지는 것 같아요.",
+      "stopped": true,
+      "new_tokens": 24
+    },
+    "174": {
+      "text": "자신의 삶이 행복한가봐요. 자존심이 상한가봐요.",
+      "stopped": true,
+      "new_tokens": 20
+    },
+    "175": {
+      "text": "부족한 재화를 사서 쓰세요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "176": {
+      "text": "부모님과 함께 살면서 부부가 되는 게 좋겠네요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "177": {
+      "text": "생각보다 많은 시간이 흘렀나봐요.",
+      "stopped": true,
+      "new_tokens": 12
+    },
+    "178": {
+      "text": "고생 많았어요. 그게 맞았겠네요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "179": {
+      "text": "더 좋은 곳으로 가보세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "180": {
+      "text": "자신의 마음을 정리하는 데는 시간이 걸릴 거예요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "181": {
+      "text": "부담스럽지 않은 선택이 되길 바랍니다.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    "182": {
+      "text": "아직도 힘들지 않아서 그런지 알기 힘들지도 몰라요.",
+      "stopped": true,
+      "new_tokens": 18
+    },
+    "183": {
+      "text": "자신을 사랑하고 사랑하는 사람이 있으면 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 16
+    },
+    "184": {
+      "text": "직접적으로 만나보세요. 그게 아니었나요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "185": {
+      "text": "고민하고 있다면 편한가봐요. 편한가봐요.",
+      "stopped": true,
+      "new_tokens": 17
+    },
+    "186": {
+      "text": "자신의 감정을 표현해보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "187": {
+      "text": "자신의 의지를 존중하고 존중하는 마음으로 시작하세요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "188": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "189": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "190": {
+      "text": "아무것도 안하고 아픈 것도 아닐까요?",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "191": {
+      "text": "자신을 사랑하고 사랑해보세요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    "192": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "193": {
+      "text": "자신을 더 사랑해주세요.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    "194": {
+      "text": "자신에게 물어보는 것도 좋을 것 같아요.",
+      "stopped": true,
+      "new_tokens": 15
+    },
+    "195": {
+      "text": "인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의 인맥이 넓지 않아도 돼요. 당신의",
+      "stopped": false,
+      "new_tokens": 96
+    },
+    "196": {
+      "text": "인공지능을 활용한 재미있는 재미를 만들어보세요.",
+      "stopped": true,
+      "new_tokens": 16
+    },
+    "197": {
+      "text": "생각보다 많은 시간이 흘렀네요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    "198": {
+      "text": "부담스럽지 않은 일이 생길 수도 있어요.",
+      "stopped": true,
+      "new_tokens": 13
+    },
+    "199": {
+      "text": "자신의 능력을 믿어보세요.",
+      "stopped": true,
+      "new_tokens": 9
+    },
+    "200": {
+      "text": "자신에게 고백했던 것보다 더 많은 사랑을 해보세요.",
+      "stopped": true,
+      "new_tokens": 15
+    }
+  }
+}
