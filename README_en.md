@@ -24,7 +24,7 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · The model archit
 
 [한국어](./README.md) | English
 
-[Results](#-results) · [Final model and chat examples](#-final-model-and-chat-examples) · [Try the comparison](#-try-the-comparison) · [Step-by-step notes](#-step-by-step-notes) · [Full reproduction](#-full-reproduction) · [Environment and what is published](#-environment-and-what-is-published) · [Differences from MiniMind and sources](#-differences-from-minimind-and-sources)
+[Results](#-results) · [Final model and chat examples](#-final-model-and-chat-examples) · [Model architecture](#model-architecture) · [Try the comparison](#-try-the-comparison) · [Step-by-step notes](#-step-by-step-notes) · [Full reproduction](#-full-reproduction) · [Environment and what is published](#-environment-and-what-is-published) · [Differences from MiniMind and sources](#-differences-from-minimind-and-sources)
 
 </div>
 
@@ -103,6 +103,61 @@ Below are the final SFT model's actual answers. The 10 questions and the generat
 ![Console running scripts/chat_ko.py on the same 10 questions](images/chat_demo_console.png)
 
 The model answers short everyday and comforting questions with natural Korean sentences, but often not to the point, and it cannot answer the knowledge, translation or arithmetic questions. The likely reasons are that the chat data is only 9,749 short comforting Q&A pairs and the model is small (71M parameters). The trained weights are not published, so these answers cannot be reproduced directly.
+
+---
+
+<a name="model-architecture"></a>
+# 📌 Model architecture
+
+The models use the original MiniMind `minimind-3` (Dense) architecture unchanged; only the vocabulary size differs. The model code is the original [`model/model_minimind.py`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/model/model_minimind.py), imported without modification.
+
+![minimind_ko final model architecture: (a) overall flow, (b) Transformer block, (c) GQA attention, (d) SwiGLU FFN and parameter counts](images/architecture_en.png)
+
+The numbers in the figure are not typed by hand: [scripts/plot_architecture.py](scripts/plot_architecture.py) reads them from the original model code and `tokenizers/ko_16000` (no weight files needed). The token pieces in (a) are the actual tokenization of the example sentence, and the orange dashed outlines in (c) mark where LoRA was attached in [docs/09](docs/09_LoRA_DPO_체험.md). The layout follows the original MiniMind architecture figure.
+
+### Components
+
+| Component | What it does | Setting in this repository | Original paper |
+|---|---|---|---|
+| Decoder-only Transformer | Predicts the next token from the preceding tokens only | 8 layers, d_model 768 | [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762) |
+| Pre-Norm + RMSNorm | Normalizes values before attention and FFN. Rescales by RMS without subtracting the mean, so it costs less than LayerNorm | Twice per layer + once before the output layer | [Xiong et al., 2020](https://arxiv.org/abs/2002.04745) · [Zhang & Sennrich, 2019](https://arxiv.org/abs/1910.07467) |
+| GQA | Several Q heads share one K/V head, reducing K/V computation and the KV cache | q_heads 8, kv_heads 4 (2 Q heads share 1 K/V pair), head_dim 96 | [Ainslie et al., 2023](https://arxiv.org/abs/2305.13245) |
+| QK-Norm | Applies per-head RMSNorm to Q and K before RoPE | `q_norm`, `k_norm` | [Henry et al., 2020](https://arxiv.org/abs/2010.04245) |
+| RoPE | Encodes token position by rotating the Q and K vectors | rope_theta 1e6 | [Su et al., 2021](https://arxiv.org/abs/2104.09864) |
+| SwiGLU FFN | Applies SiLU to one of two Linear outputs and multiplies it in as a gate | Intermediate size 2,432 (= ⌈768 × π / 64⌉ × 64) | [Shazeer, 2020](https://arxiv.org/abs/2002.05202) |
+| Tied embedding and output weights | The input embedding and the output Linear use the same matrix | `tie_word_embeddings=True`. Adding 9,600 vocabulary entries adds only 7.37M parameters | [Press & Wolf, 2016](https://arxiv.org/abs/1608.05859) |
+
+### In the original but not enabled here
+
+* **Dropout**: present in the code, but the probability is 0.0 (the original default), so it does nothing.
+* **YaRN** ([Peng et al., 2023](https://arxiv.org/abs/2309.00071)): an inference option that adjusts RoPE for contexts longer than the training length. Left off (`inference_rope_scaling=False`).
+* **Long context**: `max_position_embeddings` is configured as 32,768, but the actual training length is 512 tokens for pretraining and 128 tokens for chat SFT.
+* **MoE**: every model in this repository uses `use_moe=False`.
+
+<details>
+<summary>The original MoE variant (not used in this repository)</summary>
+
+The original also provides `minimind-3-moe` (198M total, 64M active per token), which splits the FFN into several experts and lets a router pick only some of them for each token. The original default is 1 of 4 experts (top-1) with no shared expert. The original README says this setting is about 50% slower than Dense in its plain PyTorch implementation (not measured in this repository). Related papers: [Shazeer et al., 2017](https://arxiv.org/abs/1701.06538), top-1 routing [Fedus et al., 2021](https://arxiv.org/abs/2101.03961).
+
+<p align="center">
+  <img src="images/minimind_structure_moe.jpg" alt="MiniMind MoE model architecture" width="90%">
+</p>
+
+<sub>Figure: `images/LLM-structure-moe.jpg` from the original [MiniMind](https://github.com/jingyaogong/minimind) README (Apache-2.0)</sub>
+
+</details>
+
+### Models in this repository
+
+Layers, width and heads are identical; only the embedding parameters change with the vocabulary size.
+
+| Model | Params | vocab | n_layers | d_model | q_heads | kv_heads | Training length | Note |
+|---|---|---|---|---|---|---|---|---|
+| minimind-3 (original public model) | 63.91M | 6,400 (original) | 8 | 768 | 8 | 4 | – | Step 1 trial only, not trained here |
+| ko 6,400 | 63.91M | 6,400 | 8 | 768 | 8 | 4 | 512 | Vocab comparison (50k–1M chunks) |
+| ko 16,000 | 71.28M | 16,000 | 8 | 768 | 8 | 4 | 512 | Vocab comparison (50k–1M chunks) |
+| **Final model** | **71.28M** | **16,000** | 8 | 768 | 8 | 4 | 512 → SFT 128 | Full training pool × 2 epochs pretraining + chat SFT |
+| LoRA adapter | +0.39M | 16,000 | 8 | 768 | 8 | 4 | 128 | rank 16, added only to q_proj and o_proj in each layer ([docs/09](docs/09_LoRA_DPO_체험.md)) |
 
 ---
 
@@ -248,6 +303,7 @@ Every script has usage instructions in its top docstring (Korean). The working d
 | [run_scale.py](scripts/run_scale.py) / [run_scale.bat](scripts/run_scale.bat) | `minimind_ko` | Runner for the data-scale experiment. Runs training, evaluation and the decision in order; if it stops, running it again resumes (no duplicate runs) |
 | [decide_vocab.py](scripts/decide_vocab.py) | `minimind_ko` | Prints BPB and BPC per size, Δ with a document-level paired bootstrap 95% interval, and the decision under the rule set before seeing the 1M results |
 | [plot_scale_bpb.py](scripts/plot_scale_bpb.py) | `minimind_ko` | Saves the BPB-by-training-size plot from `decision.json` (Korean / English) |
+| [plot_architecture.py](scripts/plot_architecture.py) | `minimind_ko` | Saves the model architecture figure, reading tensor shapes, parameter counts and example tokens from the original model code and the ko_16000 tokenizer (Korean / English, no GPU or weights needed) |
 | [scale_token_stats.py](scripts/scale_token_stats.py) | `minimind_ko` | Tokenizes the training and held-out sets exactly as in training and prints token counts, truncated chunks, padding share and characters per token per vocab (docs/06) |
 | [scale_costs.py](scripts/scale_costs.py) | `minimind_ko` | Prints the parameter breakdown, seconds per training step per size, and 1M loss averages by range. `--bench` measures GPU generation speed and memory (docs/06) |
 | [analyze_scale_results.py](scripts/analyze_scale_results.py) | `minimind_ko` | Reproduces the decision, then prints per-token loss, the size of the 1M Δ, Δ under other calculations, and Δ by text feature (exploratory) (docs/06) |
@@ -327,7 +383,7 @@ minimind_ko/
 ├── scripts/               Scripts written for this project
 ├── tests/                 Unit tests for the data split, decision and runner
 ├── logs/                  Training, evaluation and decision logs
-├── images/                Plots
+├── images/                Plots, chat screenshot, architecture figure
 ├── tokenizers/            Korean tokenizers trained here (ko_6400, ko_16000)
 ├── data/                  Korean data                                  (not in git)
 ├── out_ko/                Weights of the first comparison              (not in git)
@@ -363,6 +419,7 @@ What comes from, or depends on, the original:
 | Model architecture | Uses the original `model/model_minimind.py` as is (only the vocab size is passed as an argument). |
 | Trial data and model | The Chinese pretraining data `pretrain_t2t_mini.jsonl` and the released model `minimind-3` were published on Hugging Face by the original author. |
 | README layout | Modeled on the original README. |
+| Architecture figures | `images/architecture_en.png` is redrawn for this repository's model, following the layout of the original architecture figure. `images/minimind_structure_moe.jpg` in the MoE note is an unmodified copy of the original `images/LLM-structure-moe.jpg`. |
 
 **Changes**: No original files were modified. The only behavioral difference from the original is that external wrapper scripts allow setting the tokenizer path, vocab size and checkpoint folder, and resuming interrupted training from a checkpoint (`--resume 1`, the same approach as the original `--from_resume`) ([docs/04](docs/04_한국어_사전학습.md#1-학습-스크립트-만들기-scriptstrain_pretrain_kopy), Korean).
 

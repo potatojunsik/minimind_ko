@@ -24,7 +24,7 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · 모델 구조와
 
 한국어 | [English](./README_en.md)
 
-[결과](#-결과) · [최종 모델과 대화 예시](#-최종-모델과-대화-예시) · [직접 비교해 보기](#-직접-비교해-보기) · [단계별 기록](#-단계별-기록) · [전체 재현](#-전체-재현) · [실행 환경과 공개 범위](#-실행-환경과-공개-범위) · [원본 MiniMind와의 차이와 출처](#-원본-minimind와의-차이와-출처)
+[결과](#-결과) · [최종 모델과 대화 예시](#-최종-모델과-대화-예시) · [모델 구조](#model-architecture) · [직접 비교해 보기](#-직접-비교해-보기) · [단계별 기록](#-단계별-기록) · [전체 재현](#-전체-재현) · [실행 환경과 공개 범위](#-실행-환경과-공개-범위) · [원본 MiniMind와의 차이와 출처](#-원본-minimind와의-차이와-출처)
 
 </div>
 
@@ -103,6 +103,61 @@ SFT 뒤 대화 평가용 2,001쌍의 답 본문 BPB는 1.0958로, 기존 100만 
 ![콘솔에서 scripts/chat_ko.py로 같은 10문항을 넣은 화면](images/chat_demo_console.png)
 
 짧은 일상·위로형 질문에는 자연스러운 한국어 문장으로 답하지만 질문에 꼭 맞지 않는 답이 많고, 위키 지식·번역·계산 질문에는 답하지 못합니다. 대화 데이터가 짧은 위로형 문답 9,749쌍뿐이고 모델이 71M 파라미터로 작기 때문으로 보입니다. 학습한 가중치는 공개하지 않아 위 답을 직접 재현할 수는 없습니다.
+
+---
+
+<a name="model-architecture"></a>
+# 📌 모델 구조
+
+원본 MiniMind의 `minimind-3`(Dense) 구조를 그대로 쓰고, 어휘(vocab) 크기만 바꿨습니다. 모델 코드는 원본 [`model/model_minimind.py`](https://github.com/jingyaogong/minimind/blob/233d00fa068ec2b8c0d4f07b703934d6391a5a73/model/model_minimind.py)를 수정하지 않고 import해서 씁니다.
+
+![minimind_ko 최종 모델 구조: (a) 전체 흐름, (b) Transformer 블록, (c) GQA 어텐션, (d) SwiGLU FFN과 파라미터 수](images/architecture.png)
+
+그림 속 숫자는 손으로 적지 않고 [scripts/plot_architecture.py](scripts/plot_architecture.py)가 원본 모델 코드와 `tokenizers/ko_16000`에서 직접 읽어 그립니다(가중치 파일 불필요). (a)의 토큰 조각은 예시 문장을 실제로 토큰화한 결과이고, (c)의 주황 점선은 [docs/09](docs/09_LoRA_DPO_체험.md)에서 LoRA를 붙인 위치입니다. 그림 구성은 원본 MiniMind의 구조 그림을 따랐습니다.
+
+### 구성 요소
+
+| 구성 요소 | 하는 일 | 이 저장소 모델의 설정 | 처음 제안한 논문 |
+|---|---|---|---|
+| 디코더 전용 Transformer | 앞쪽 토큰만 보고 다음 토큰을 예측 | 8층, d_model 768 | [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762) |
+| Pre-Norm + RMSNorm | 어텐션·FFN에 들어가기 전에 값을 정규화. 평균은 빼지 않고 크기(RMS)만 맞춰 LayerNorm보다 계산이 적음 | 층마다 2번 + 출력층 앞 1번 | [Xiong et al., 2020](https://arxiv.org/abs/2002.04745) · [Zhang & Sennrich, 2019](https://arxiv.org/abs/1910.07467) |
+| GQA | Q 헤드 여러 개가 K·V 헤드 하나를 나눠 써서 K·V 계산과 KV 캐시를 줄임 | q_heads 8, kv_heads 4 (Q 2개가 K·V 1쌍 공유), head_dim 96 | [Ainslie et al., 2023](https://arxiv.org/abs/2305.13245) |
+| QK-Norm | Q·K를 헤드별로 RMSNorm한 뒤 RoPE를 적용 | `q_norm`, `k_norm` | [Henry et al., 2020](https://arxiv.org/abs/2010.04245) |
+| RoPE | 토큰 위치를 Q·K 벡터를 회전시키는 방식으로 넣음 | rope_theta 1e6 | [Su et al., 2021](https://arxiv.org/abs/2104.09864) |
+| SwiGLU FFN | 두 Linear 중 하나에 SiLU를 씌워 게이트로 곱함 | 중간 크기 2,432 (= ⌈768 × π / 64⌉ × 64) | [Shazeer, 2020](https://arxiv.org/abs/2002.05202) |
+| 임베딩·출력층 가중치 공유 | 입력 임베딩과 출력 Linear가 같은 행렬을 씀 | `tie_word_embeddings=True`. vocab이 9,600개 늘 때 파라미터는 7.37M만 늘어남 | [Press & Wolf, 2016](https://arxiv.org/abs/1608.05859) |
+
+### 원본에 있지만 켜지 않은 것
+
+* **Dropout**: 코드에는 있지만 확률이 0.0(원본 기본값)이라 실제로는 아무것도 하지 않습니다.
+* **YaRN** ([Peng et al., 2023](https://arxiv.org/abs/2309.00071)): 학습 길이보다 긴 문맥을 다루도록 RoPE를 보정하는 추론용 옵션입니다. `inference_rope_scaling=False`로 두었습니다.
+* **긴 문맥**: `max_position_embeddings`는 설정값 32,768이지만, 실제 학습 길이는 사전학습 512토큰, 대화 SFT 128토큰입니다.
+* **MoE**: 이 저장소의 모든 모델은 `use_moe=False`입니다.
+
+<details>
+<summary>원본의 MoE 변형 (이 저장소에서는 쓰지 않음)</summary>
+
+원본에는 FFN을 여러 전문가(expert)로 나누고, 라우터가 토큰마다 그중 일부만 골라 계산하는 `minimind-3-moe`(전체 198M, 토큰당 활성 64M)도 있습니다. 원본 기본값은 전문가 4개 중 1개 선택(top-1)이고 shared expert는 없습니다. 원본 README는 이 설정이 순수 PyTorch 구현에서 Dense보다 약 50% 느리다고 설명합니다(이 저장소에서는 측정하지 않았습니다). 관련 논문: [Shazeer et al., 2017](https://arxiv.org/abs/1701.06538), top-1 라우팅 [Fedus et al., 2021](https://arxiv.org/abs/2101.03961).
+
+<p align="center">
+  <img src="images/minimind_structure_moe.jpg" alt="MiniMind MoE 모델 구조" width="90%">
+</p>
+
+<sub>그림 출처: 원본 [MiniMind](https://github.com/jingyaogong/minimind) README의 `images/LLM-structure-moe.jpg` (Apache-2.0)</sub>
+
+</details>
+
+### 이 저장소에서 다룬 모델
+
+층·차원·헤드 구성은 모두 같고, vocab 크기 차이만큼 임베딩 파라미터만 달라집니다.
+
+| 모델 | 파라미터 | vocab | n_layers | d_model | q_heads | kv_heads | 학습 길이 | 비고 |
+|---|---|---|---|---|---|---|---|---|
+| minimind-3 (원본 공개 모델) | 63.91M | 6,400 (원본) | 8 | 768 | 8 | 4 | – | 1단계 체험용, 직접 학습 안 함 |
+| ko 6,400 | 63.91M | 6,400 | 8 | 768 | 8 | 4 | 512 | vocab 비교용 (5만~100만 조각) |
+| ko 16,000 | 71.28M | 16,000 | 8 | 768 | 8 | 4 | 512 | vocab 비교용 (5만~100만 조각) |
+| **최종 모델** | **71.28M** | **16,000** | 8 | 768 | 8 | 4 | 512 → SFT 128 | 학습 풀 전체 × 2 epoch 사전학습 + 대화 SFT |
+| LoRA 어댑터 | +0.39M | 16,000 | 8 | 768 | 8 | 4 | 128 | rank 16, 층마다 q_proj·o_proj에만 추가 ([docs/09](docs/09_LoRA_DPO_체험.md)) |
 
 ---
 
@@ -248,6 +303,7 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | [run_scale.py](scripts/run_scale.py) / [run_scale.bat](scripts/run_scale.bat) | `minimind_ko` | 데이터 양 실험 실행기. 학습·평가·판정을 차례로 돌리고, 끊기면 다시 실행해 이어감 (중복 실행 방지) |
 | [decide_vocab.py](scripts/decide_vocab.py) | `minimind_ko` | 크기별 BPB·BPC, Δ와 문서 단위 쌍 부트스트랩 95% 구간, 사전 규칙에 따른 판정 출력 |
 | [plot_scale_bpb.py](scripts/plot_scale_bpb.py) | `minimind_ko` | `decision.json`으로 학습 조각 수별 BPB 그래프 저장 (한국어 / 영어) |
+| [plot_architecture.py](scripts/plot_architecture.py) | `minimind_ko` | 원본 모델 코드와 ko_16000 토크나이저에서 텐서 크기·파라미터 수·예시 토큰을 읽어 모델 구조 그림 저장 (한국어 / 영어, GPU·가중치 불필요) |
 | [scale_token_stats.py](scripts/scale_token_stats.py) | `minimind_ko` | 학습·검증 세트를 학습 때와 같은 방식으로 토큰화해 vocab별 토큰 수, 잘린 조각, 패딩 비율, 글자/토큰 출력 (docs/06) |
 | [scale_costs.py](scripts/scale_costs.py) | `minimind_ko` | 파라미터 구성, 크기별 학습 step당 시간, 100만 loss 구간 평균 출력. `--bench`로 GPU 생성 속도·메모리 측정 (docs/06) |
 | [analyze_scale_results.py](scripts/analyze_scale_results.py) | `minimind_ko` | 판정을 재현한 뒤 토큰당 손실, 100만 Δ의 크기, 계산 방식을 바꾼 Δ, 글 특징별 Δ(탐색적) 출력 (docs/06) |
@@ -327,7 +383,7 @@ minimind_ko/
 ├── scripts/               직접 작성한 스크립트
 ├── tests/                 데이터 분할·판정·실행기 단위 테스트
 ├── logs/                  학습·평가·판정 로그
-├── images/                그래프
+├── images/                그래프, 대화 화면, 모델 구조 그림
 ├── tokenizers/            직접 학습한 한국어 토크나이저 (ko_6400, ko_16000)
 ├── data/                  한국어 데이터                    (git 제외)
 ├── out_ko/                첫 비교 실험 가중치              (git 제외)
@@ -363,6 +419,7 @@ minimind_ko/
 | 모델 구조 | 원본 `model/model_minimind.py`를 그대로 씁니다 (vocab 크기만 인자로 지정). |
 | 체험용 데이터와 모델 | 중국어 사전학습 데이터 `pretrain_t2t_mini.jsonl`과 공개 모델 `minimind-3`는 원본 저자가 Hugging Face에 공개한 것입니다. |
 | README 구성 | 원본 README의 형식을 참고했습니다. |
+| 모델 구조 그림 | `images/architecture.png`는 원본 구조 그림의 구성을 따라 이 저장소 모델 기준으로 새로 그린 것입니다. MoE 설명의 `images/minimind_structure_moe.jpg`는 원본 `images/LLM-structure-moe.jpg`를 그대로 복사한 것입니다. |
 
 **변경 사항**: 원본 파일은 수정하지 않았습니다. 원본과 달라진 동작은 바깥 래퍼 스크립트에서 토크나이저 경로, vocab 크기, 체크포인트 폴더를 지정하고, 끊긴 학습을 체크포인트에서 이어서 할 수 있게(`--resume 1`, 원본 `--from_resume`과 같은 방식) 한 것뿐입니다 ([docs/04](docs/04_한국어_사전학습.md#1-학습-스크립트-만들기-scriptstrain_pretrain_kopy)).
 
