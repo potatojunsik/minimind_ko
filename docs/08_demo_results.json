@@ -1,0 +1,196 @@
+{
+  "settings": {
+    "weight": "out_final/sft/sft_ko16000_768.pth",
+    "tokenizer": "tokenizers/ko_16000",
+    "prompt": "<|im_start|>user\n{질문}<|im_end|>\n<|im_start|>assistant\n",
+    "decoding": "greedy (do_sample=False, temperature 1.0, top_k 0, top_p 1.0, repetition_penalty 1.0)",
+    "max_new_tokens": 96,
+    "stop": "<|im_end|>",
+    "dtype": "fp32",
+    "truncated_mark": "[상한에서 잘림]",
+    "same_as": "07번 블라인드 비교 blind_chat_eval.generate_one"
+  },
+  "weight_sha256": "c9a11e2d3d43935abf1835f30b5754095518abcd50823af31fae4205a908e240",
+  "environment": {
+    "torch": "2.11.0+cu128",
+    "device": "NVIDIA GeForce RTX 5050 Laptop GPU"
+  },
+  "demo": [
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "진짜 이제 한계야",
+      "reference": "당신의 잠재력을 믿어보세요.",
+      "group": 3134,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 1,
+      "answer": "진짜로 끝낼 수 있을 거예요.",
+      "text": "진짜로 끝낼 수 있을 거예요.",
+      "stopped": true,
+      "new_tokens": 12
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "양심이 콕콕",
+      "reference": "그런 일은 하지 마세요.",
+      "group": 3018,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 2,
+      "answer": "아무래도 괜찮아요.",
+      "text": "아무래도 괜찮아요.",
+      "stopped": true,
+      "new_tokens": 11
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "나를 좋아한다는 사람한테 호감이 생길까요?",
+      "reference": "꾸준히 만나다보면 생길 수 있어요.",
+      "group": 9123,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 3,
+      "answer": "그 사람도 좋아할 거예요.",
+      "text": "그 사람도 좋아할 거예요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "결국 또 꿈꿨네.",
+      "reference": "다른 생각 하고 주무세요.",
+      "group": 5490,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 4,
+      "answer": "꿈이 필요하죠.",
+      "text": "꿈이 필요하죠.",
+      "stopped": true,
+      "new_tokens": 7
+    },
+    {
+      "category": "평가용 대화 (학습에 안 씀)",
+      "q": "이제 헤어진지 1주일됐어",
+      "reference": "긴 시간이었을거라 생각해요.",
+      "group": 7666,
+      "expect": "학습 데이터와 같은 분포라 짧은 공감·일상 답을 예상",
+      "id": 5,
+      "answer": "그런 날이 있나봐요.",
+      "text": "그런 날이 있나봐요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    {
+      "category": "일상 (직접 씀)",
+      "q": "오늘 비가 와서 그런지 기분이 좀 가라앉아",
+      "expect": "학습 데이터와 같은 말투라 짧은 공감 답을 예상",
+      "id": 6,
+      "answer": "그런 날이 있나봐요.",
+      "text": "그런 날이 있나봐요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    {
+      "category": "위키 지식",
+      "q": "대한민국의 수도는 어디야?",
+      "expect": "SFT 데이터에 지식 문답이 없어 틀리거나 엉뚱한 답을 예상",
+      "id": 7,
+      "answer": "수도권 매립지에서는 매립지를 찾아보세요.",
+      "text": "수도권 매립지에서는 매립지를 찾아보세요.",
+      "stopped": true,
+      "new_tokens": 14
+    },
+    {
+      "category": "위키 지식",
+      "q": "세종대왕은 어떤 일을 했어?",
+      "expect": "SFT 데이터에 지식 문답이 없어 틀리거나 엉뚱한 답을 예상",
+      "id": 8,
+      "answer": "그럴 때가 있죠.",
+      "text": "그럴 때가 있죠.",
+      "stopped": true,
+      "new_tokens": 8
+    },
+    {
+      "category": "범위 밖 (지시)",
+      "q": "다음 문장을 영어로 번역해 줘: 나는 학생이다",
+      "expect": "번역 지시를 배운 적이 없어 실패를 예상",
+      "id": 9,
+      "answer": "그게 내가 원하는 것일까요.",
+      "text": "그게 내가 원하는 것일까요.",
+      "stopped": true,
+      "new_tokens": 10
+    },
+    {
+      "category": "범위 밖 (계산)",
+      "q": "123 더하기 456은 얼마야?",
+      "expect": "계산을 배운 적이 없어 실패를 예상",
+      "id": 10,
+      "answer": "그게 맞을 거예요.",
+      "text": "그게 맞을 거예요.",
+      "stopped": true,
+      "new_tokens": 9
+    }
+  ],
+  "blind200": {
+    "final_sft": {
+      "items": 200,
+      "truncated": 3,
+      "distinct_answers": 152,
+      "items_with_answer_repeated_3plus": 51,
+      "phrases": {
+        "그런 사람 만나지 마세요.": 21,
+        "그런 사람 만나세요.": 6
+      },
+      "top5": [
+        [
+          "그런 사람 만나지 마세요.",
+          21
+        ],
+        [
+          "마음이 복잡하겠어요.",
+          6
+        ],
+        [
+          "그런 사람 만나세요.",
+          6
+        ],
+        [
+          "그런 날이 있나봐요.",
+          4
+        ],
+        [
+          "잘할 수 있을 거예요.",
+          4
+        ]
+      ]
+    },
+    "sft_07_ko16000": {
+      "items": 200,
+      "truncated": 4,
+      "distinct_answers": 132,
+      "items_with_answer_repeated_3plus": 71,
+      "phrases": {
+        "그런 사람 만나지 마세요.": 27,
+        "그런 사람 만나세요.": 6
+      },
+      "top5": [
+        [
+          "그런 사람 만나지 마세요.",
+          27
+        ],
+        [
+          "잘할 수 있을 거예요.",
+          8
+        ],
+        [
+          "그런 사람도 있어요.",
+          7
+        ],
+        [
+          "그런 사람 만나세요.",
+          6
+        ],
+        [
+          "마음이 아프네요.",
+          5
+        ]
+      ]
+    }
+  }
+}

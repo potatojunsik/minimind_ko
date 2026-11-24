@@ -1,0 +1,20 @@
+명령: D:\minimind_ko\.venv\Scripts\python.exe -X utf8 scripts/eval_bpc.py --tokenizer_dir tokenizers/ko_16000 --weight out_final/exp_pack400k/pretrain_ko16000_768.pth --data_path data/scale/heldout.jsonl --per_doc_out out_final/exp_pack400k/per_doc.jsonl
+  200/2001 (4s)
+  400/2001 (8s)
+  600/2001 (12s)
+  800/2001 (14s)
+  1000/2001 (18s)
+  1200/2001 (22s)
+  1400/2001 (25s)
+  1600/2001 (28s)
+  1800/2001 (32s)
+  2000/2001 (35s)
+
+tokenizer: tokenizers/ko_16000 (vocab 16000) | weight: out_final/exp_pack400k/pretrain_ko16000_768.pth
+문서 2001개 | 글자 873,447 | 텍스트 토큰 434,870 | window 512 초과 문서 17개 | 35s
+BPC (텍스트+eos)       : 2.5934
+BPC (텍스트만)         : 2.5878
+토큰당 loss (텍스트+eos): 3.5939
+토큰당 평균 글자 수     : 2.009
+BPB (텍스트+eos)       : 1.1763
+평가 텍스트 sha256: 706d5eb07c3d4dead7d191a53bbfd03a74d2c77e594c68a357ea215f8bcf0212

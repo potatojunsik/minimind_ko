@@ -24,11 +24,11 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · The model archit
 
 [한국어](./README.md) | English
 
-[Results](#-results) · [Try the comparison](#-try-the-comparison) · [Step-by-step notes](#-step-by-step-notes) · [Full reproduction](#-full-reproduction) · [Environment and what is published](#-environment-and-what-is-published) · [Differences from MiniMind and sources](#-differences-from-minimind-and-sources)
+[Results](#-results) · [Final model and chat examples](#-final-model-and-chat-examples) · [Try the comparison](#-try-the-comparison) · [Step-by-step notes](#-step-by-step-notes) · [Full reproduction](#-full-reproduction) · [Environment and what is published](#-environment-and-what-is-published) · [Differences from MiniMind and sources](#-differences-from-minimind-and-sources)
 
 </div>
 
-A personal study log of training Korean tokenizers and a MiniMind-based language model from scratch on a single 8GB laptop GPU. The original MiniMind tokenizer splits “오늘 날씨가 정말 좋네요.” (“The weather is really nice today.”) into 30 tokens, while the Korean tokenizers built here split it into 11 tokens with a 6,400-token vocabulary and 9 with a 16,000-token vocabulary. So I expected the 16,000 side to do better. I split Wikipedia articles into chunks of up to 800 characters. When trained on 100,000 of these chunks, the model with a 6,400-token vocabulary had a lower validation BPB. At one million training chunks, the ordering reversed. The model with a 16,000-token vocabulary had a slightly lower validation BPB, so I selected that vocabulary under the rule I had set before seeing the one-million-chunk results.
+A personal study log of training Korean tokenizers and a MiniMind-based language model from scratch on a single 8GB laptop GPU. The original MiniMind tokenizer splits “오늘 날씨가 정말 좋네요.” (“The weather is really nice today.”) into 30 tokens, while the Korean tokenizers built here split it into 11 tokens with a 6,400-token vocabulary and 9 with a 16,000-token vocabulary. So I expected the 16,000 side to do better. I split Wikipedia articles into chunks of up to 800 characters. When trained on 100,000 of these chunks, the model with a 6,400-token vocabulary had a lower validation BPB. At one million training chunks, the ordering reversed. The model with a 16,000-token vocabulary had a slightly lower validation BPB, so I selected that vocabulary under the rule I had set before seeing the one-million-chunk results. With this tokenizer I then pretrained on the whole Wikipedia training pool for 2 epochs and ran chat SFT; how the final model actually answers is shown in [Final model and chat examples](#-final-model-and-chat-examples).
 
 ![Held-out BPB by training data size (vocab 6,400 / 16,000)](images/scale_bpb_en.png)
 
@@ -71,6 +71,38 @@ However, a reference evaluation of these two Wikipedia-only models on Korean cha
 The input embedding and the output layer share weights (`tie_word_embeddings=True`), so the parameter count grows only by the added vocabulary (9,600 × 768 ≈ 7.4M).
 
 </details>
+
+---
+
+# 📌 Final model and chat examples
+
+With the selected 16,000-token vocabulary I pretrained on the whole Wikipedia training pool (1,183,370 chunks) for 2 epochs without packing (about 16.4 hours), then ran SFT on the same chat data as docs/07 (9,749 pairs). Packing and 2 epochs were first checked in small experiments, and every adoption rule was fixed before seeing the results. Details are in [docs/08](docs/08_최종_사전학습과_SFT.md) (Korean).
+
+| Model | Wikipedia validation BPB (↓) |
+|---|---|
+| Previous 16,000 · 1M chunks × 1 epoch | 1.0080 |
+| **Final: whole training pool × 2 epochs** | **0.9432** (Δ −0.0649, 95% interval [−0.0672, −0.0626] → new model adopted) |
+
+After SFT, the answer-text BPB on the 2,001 held-out chat pairs is 1.0958, lower than the model given the same SFT on top of the previous 1M model (1.1134; Δ −0.0176 [−0.0242, −0.0111]). This means the loss of predicting the reference answers went down; it is not a verdict that the model chats better.
+
+Below are the final SFT model's actual answers. The 10 questions and the generation settings were fixed and committed before any answer was generated (bfe0a76), and every answer is shown as generated, without picking or editing. Decoding is greedy (the same question always gets the same answer) with a 96-token limit. English translations are mine.
+
+| Type | Question | Model's answer |
+|---|---|---|
+| Held-out chat (not trained on) | 진짜 이제 한계야 (I'm really at my limit now) | 진짜로 끝낼 수 있을 거예요. (You'll really be able to finish it.) |
+| Held-out chat | 양심이 콕콕 (My conscience is pricking me) | 아무래도 괜찮아요. (It's fine anyway.) |
+| Held-out chat | 나를 좋아한다는 사람한테 호감이 생길까요? (Will I come to like someone who says they like me?) | 그 사람도 좋아할 거예요. (They will like you too.) |
+| Held-out chat | 결국 또 꿈꿨네. (I dreamed again after all.) | 꿈이 필요하죠. (We need dreams.) |
+| Held-out chat | 이제 헤어진지 1주일됐어 (It's been a week since we broke up) | 그런 날이 있나봐요. (I guess there are days like that.) |
+| Everyday (written by me) | 오늘 비가 와서 그런지 기분이 좀 가라앉아 (Maybe it's the rain, I feel a bit down today) | 그런 날이 있나봐요. (I guess there are days like that.) |
+| Wikipedia knowledge (expected to fail) | 대한민국의 수도는 어디야? (What is the capital of South Korea?) | 수도권 매립지에서는 매립지를 찾아보세요. (At the capital-area landfill, look for the landfill.) |
+| Wikipedia knowledge (expected to fail) | 세종대왕은 어떤 일을 했어? (What did King Sejong do?) | 그럴 때가 있죠. (There are times like that.) |
+| Out of scope: translation (expected to fail) | 다음 문장을 영어로 번역해 줘: 나는 학생이다 (Translate into English: I am a student) | 그게 내가 원하는 것일까요. (Is that what I want?) |
+| Out of scope: arithmetic (expected to fail) | 123 더하기 456은 얼마야? (What is 123 plus 456?) | 그게 맞을 거예요. (That must be right.) |
+
+![Console running scripts/chat_ko.py on the same 10 questions](images/chat_demo_console.png)
+
+The model answers short everyday and comforting questions with natural Korean sentences, but often not to the point, and it cannot answer the knowledge, translation or arithmetic questions. The likely reasons are that the chat data is only 9,749 short comforting Q&A pairs and the model is small (71M parameters). The trained weights are not published, so these answers cannot be reproduced directly.
 
 ---
 
@@ -131,7 +163,7 @@ Each step is recorded in [docs/](docs) (Korean) with commands, results, lessons 
 | 3-1 | Does 16,000, which uses fewer tokens, predict better? (100k Wikipedia chunks) | ✅ Contrary to the expectation, 6,400 was better | [docs/05](docs/05_vocab_비교.md) (Korean) |
 | 3-2 | Does the result flip with more data? (50k to 1M chunks) | ✅ 16,000 led at 1M and was selected under the rule set before seeing the 1M results | [docs/06](docs/06_데이터양_비교.md) (Korean) |
 | 3-3 | After SFT on the same chat data, does 6,400 still give better answers? | ✅ BPB slightly favored 6,400, the blind generation comparison (one LLM judge) favored 16,000 (62 vs 41) → 16,000 kept under the rule set before the results | [docs/07](docs/07_대화_SFT_비교.md) (Korean) |
-| 4 | Final pretraining with the selected tokenizer, then Korean chat training (SFT) | ⏳ Planned | |
+| 4 | Final pretraining with the selected tokenizer, then Korean chat training (SFT) | ✅ Packing not adopted, 2 epochs adopted → whole training pool × 2 epochs, Wikipedia validation BPB 1.0080 → 0.9432. Chat SFT and the README chat examples | [docs/08](docs/08_최종_사전학습과_SFT.md) (Korean) |
 | 5 | (Optional) LoRA, DPO | ⏳ Planned | |
 
 ---
@@ -177,6 +209,14 @@ scripts\run_scale.bat
 .venv\Scripts\python.exe -X utf8 scripts\plot_scale_bpb.py out_scale/decision.json images\scale_bpb.png ko
 .venv\Scripts\python.exe -X utf8 scripts\plot_scale_bpb.py out_scale/decision.json images\scale_bpb_en.png en
 
+REM IV Final pretraining and SFT: whole-pool file -> experiments 1 and 2, decision, final training, adoption decision, SFT (docs/08)
+REM    run_final.bat also runs for a long time in its own window (about 21 hours of training on this PC, experiments included). If interrupted, run it again to resume
+.venv\Scripts\python.exe -X utf8 scripts\prepare_final_data.py
+scripts\run_final.bat
+.venv\Scripts\python.exe -X utf8 scripts\final_demo.py select
+.venv\Scripts\python.exe -X utf8 scripts\final_demo.py generate
+.venv\Scripts\python.exe -X utf8 scripts\chat_ko.py
+
 REM Unit tests (data split, decision, runner)
 .venv\Scripts\python.exe -X utf8 -m unittest discover tests -v
 ```
@@ -216,6 +256,13 @@ Every script has usage instructions in its top docstring (Korean). The working d
 | [train_sft_ko.py](scripts/train_sft_ko.py) | `minimind_ko` | SFT of the Korean models in a fixed chat format, reusing the original SFT training loop (docs/07) |
 | [blind_chat_eval.py](scripts/blind_chat_eval.py) | `minimind_ko` | Blind generation comparison: fixing items, generating answers and the sheet, scoring and the decision (docs/07) |
 | [eval_chat_bpb.py](scripts/eval_chat_bpb.py) | `minimind_ko` | Compares the two models by answer BPB, with the question given only as context (docs/06). `--format chat` uses the same chat format as SFT (docs/07) |
+| [packing.py](scripts/packing.py) | `minimind_ko` | Packing: joins chunks and cuts them into 512-token rows. Used by `train_pretrain_ko.py --pack 1` (docs/08) |
+| [prepare_final_data.py](scripts/prepare_final_data.py) | `minimind_ko` | Builds the whole Wikipedia training-pool file and checks that the first 1M lines match and nothing overlaps the held-out set (docs/08) |
+| [run_final.py](scripts/run_final.py) / [run_final.bat](scripts/run_final.bat) | `minimind_ko` | Final pretraining runner: experiments 1 and 2, decision, final training, adoption decision and SFT in order, resuming if interrupted (docs/08) |
+| [decide_final.py](scripts/decide_final.py) | `minimind_ko` | Packing and epoch decisions, the final adoption decision, and the SFT chat evaluation record (docs/08) |
+| [battery_guard.py](scripts/battery_guard.py) / [battery_guard.bat](scripts/battery_guard.bat) | `minimind_ko` | Laptop battery guard: stops the runner when the battery falls to 25% during pretraining and relaunches it at 90% (docs/08) |
+| [final_demo.py](scripts/final_demo.py) | `minimind_ko` | README chat examples: fixes the questions before generation, then generates and counts the 200-item statistics (docs/08) |
+| [chat_ko.py](scripts/chat_ko.py) | `minimind_ko` | Chat with the Korean SFT model in the console (greedy) (docs/08) |
 
 </details>
 
@@ -228,6 +275,7 @@ This repository is a study log. The resulting models are not meant for real use,
 * Environment: Windows 11, NVIDIA RTX 5050 Laptop (8GB VRAM, Compute Capability 12.0), Python 3.11 (uv), PyTorch 2.11.0 + CUDA 12.8, original MiniMind commit [`233d00f`](https://github.com/jingyaogong/minimind/commit/233d00fa068ec2b8c0d4f07b703934d6391a5a73) (2026-10-27). The PC specs and installation steps are in [docs/01](docs/01_환경구성.md) (Korean).
 * If training on a laptop suddenly slows down, check the GPU power limit with `nvidia-smi -q -d POWER`. On this PC, GPU power was capped at 21W unless the laptop maker's performance mode was on, regardless of the Windows power mode ([docs/04](docs/04_한국어_사전학습.md#겪은-문제), Korean).
 * If training stops with `CUDA error: out of memory` while GPU memory still has room, Windows virtual memory (commit) may have run out. On this PC, with many other programs open, the vocab 16,000 run on 1M chunks stopped once (Windows logged a virtual memory shortage at the same moment) and was retrained from scratch without data loader worker processes (`--num_workers 0`) ([docs/06](docs/06_데이터양_비교.md#실험-조건), Korean).
+* A laptop can lose battery during GPU training even with the charger plugged in. On this PC it dropped 4-9% per hour during the final pretraining, so I ran `scripts\battery_guard.bat` alongside, which stops training at 25% battery and resumes after charging ([docs/08](docs/08_최종_사전학습과_SFT.md#진행-중-있었던-일), Korean).
 * Before a training run that takes hours, postpone Windows Update's automatic restart. On this PC an update restart interrupted the vocab 16,000 run on 1M chunks once. If training is interrupted, running `scripts\run_scale.bat` again resumes it from the last checkpoint (saved every 1,000 steps) ([docs/06](docs/06_데이터양_비교.md#실험-조건), Korean).
 
 | Training | Data | Time (6,400 / 16,000) | GPU memory (6,400 / 16,000) |
@@ -236,6 +284,7 @@ This repository is a study log. The resulting models are not meant for real use,
 | Tokenizer training ([docs/03](docs/03_한국어_토크나이저.md)) | 200k Wikipedia chunks | about 50 s each (CPU) | - |
 | First comparison ([docs/04](docs/04_한국어_사전학습.md), [05](docs/05_vocab_비교.md)) | 100k Wikipedia chunks | about 35 min / about 52 min ※ | about 5,300MiB / about 6,800MiB |
 | Data-scale experiment ([docs/06](docs/06_데이터양_비교.md)) | 50k / 100k / 200k / 400k / 1M Wikipedia chunks | 50k: 20 min / 21 min<br>100k: 39 min / 43 min<br>200k: 1.3 h / 1.4 h<br>400k: 2.6 h / 2.8 h<br>1M: 6.6 h / 7.2 h (sum of resumed segments) | about 5,300MiB / about 6,800MiB (measured during the 1M runs) |
+| Final pretraining and SFT ([docs/08](docs/08_최종_사전학습과_SFT.md)) | packing 400k, 200k × 2 epochs, whole pool 1.18M × 2 epochs, 9,749 chat pairs (16,000 only) | packing experiment 1.4 h, 2-epoch experiment 2.9 h, final pretraining 16.4 h (sum of resumed segments), SFT 4 min | not measured |
 
 * GPU memory is the total GPU usage seen with nvidia-smi during training. The linked documents are in Korean.
 * ※ The 16,000 training time in the first comparison includes a stretch slowed down by the GPU power limit (21W), so it is only a reference. In the same stretch where both runs were in performance mode, the time per step was 0.335 s for 6,400 and 0.362 s for 16,000 ([docs/05](docs/05_vocab_비교.md#실험-조건), Korean).
@@ -253,9 +302,9 @@ Large or re-creatable files are not committed ([.gitignore](.gitignore)).
 | `minimind/dataset/pretrain_t2t_mini.jsonl` (original pretraining data, 1.2GB) | In the `minimind` folder: `hf_hub_download('jingyaogong/minimind_dataset','pretrain_t2t_mini.jsonl',repo_type='dataset',local_dir='dataset')` ([docs/02](docs/02_사전학습_체험.md), Korean) |
 | `data/kowiki.jsonl`, `data/raw/` (Korean Wikipedia) | `scripts/prepare_kowiki.py` |
 | `data/kowiki_train_100k.jsonl`, `data/kowiki_heldout_2k.jsonl` | `scripts/make_subset.py` |
-| `data/scale/` (held-out and training sets of the data-scale experiment, split check results) | `scripts/prepare_scale_data.py` |
+| `data/scale/` (held-out and training sets of the data-scale experiment, split check results) | `scripts/prepare_scale_data.py`; the whole-pool file with `scripts/prepare_final_data.py` |
 | `data/tokenizer_sample.jsonl` | Created automatically on the first run of `scripts/train_tokenizer_ko.py` |
-| `out*/`, `checkpoints/`, `*.pth` (trained weights, data-scale experiment status files) | Run each training command, or `scripts/run_scale.bat`, again |
+| `out*/`, `checkpoints/`, `*.pth` (trained weights, experiment status and decision files) | Run each training command, `scripts/run_scale.bat` or `scripts/run_final.bat` again |
 
 </details>
 
@@ -279,6 +328,8 @@ minimind_ko/
 ├── data/                  Korean data                                  (not in git)
 ├── out_ko/                Weights of the first comparison              (not in git)
 ├── out_scale/             Weights and status of the data-scale runs    (not in git)
+├── out_sft/               Weights of the chat SFT comparison (07)      (not in git)
+├── out_final/             Final pretraining/SFT weights, decisions (08) (not in git)
 ├── minimind/              Original repository                          (not in git)
 └── .venv/                 Virtual environment                          (not in git)
 ```
@@ -296,7 +347,7 @@ This repository is a personal study log based on [jingyaogong/minimind](https://
 | Language | Mainly Chinese and English | Korean only |
 | Tokenizer | vocab 6,400, trained on the original data | vocab 6,400 / 16,000, trained here on Korean Wikipedia |
 | Training data | Datasets released by the original author | Korean Wikipedia (preprocessed here) |
-| Scope | The whole pipeline from pretraining to SFT, LoRA, DPO and more | Pretraining, the vocab comparison and a comparison chat SFT so far (final SFT planned) |
+| Scope | The whole pipeline from pretraining to SFT, LoRA, DPO and more | Pretraining, the vocab comparison, final pretraining and chat SFT |
 
 What comes from, or depends on, the original:
 

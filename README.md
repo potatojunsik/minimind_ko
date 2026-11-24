@@ -24,11 +24,11 @@ Based on [MiniMind](https://github.com/jingyaogong/minimind) · 모델 구조와
 
 한국어 | [English](./README_en.md)
 
-[결과](#-결과) · [직접 비교해 보기](#-직접-비교해-보기) · [단계별 기록](#-단계별-기록) · [전체 재현](#-전체-재현) · [실행 환경과 공개 범위](#-실행-환경과-공개-범위) · [원본 MiniMind와의 차이와 출처](#-원본-minimind와의-차이와-출처)
+[결과](#-결과) · [최종 모델과 대화 예시](#-최종-모델과-대화-예시) · [직접 비교해 보기](#-직접-비교해-보기) · [단계별 기록](#-단계별-기록) · [전체 재현](#-전체-재현) · [실행 환경과 공개 범위](#-실행-환경과-공개-범위) · [원본 MiniMind와의 차이와 출처](#-원본-minimind와의-차이와-출처)
 
 </div>
 
-8GB 노트북 GPU 한 장에서 한국어 토크나이저와 MiniMind 기반 언어 모델을 처음부터 학습한 개인 공부 기록입니다. “오늘 날씨가 정말 좋네요.”를 원본 MiniMind 토크나이저는 30토큰으로 나누지만, 직접 만든 한국어 토크나이저는 어휘 6,400개일 때 11토큰, 16,000개일 때 9토큰으로 나눕니다. 그래서 16,000개 쪽이 유리할 거라고 예상했지만, 위키 문서를 최대 800자 길이의 조각으로 나누고 그중 10만 조각으로 학습했을 때는 어휘 6,400개 모델의 검증 BPB가 더 낮았습니다. 100만 조각에서는 순서가 뒤집혀 어휘 16,000개 모델의 검증 BPB가 근소하게 낮았고, 사전 규칙에 따라 16,000을 선택했습니다.
+8GB 노트북 GPU 한 장에서 한국어 토크나이저와 MiniMind 기반 언어 모델을 처음부터 학습한 개인 공부 기록입니다. “오늘 날씨가 정말 좋네요.”를 원본 MiniMind 토크나이저는 30토큰으로 나누지만, 직접 만든 한국어 토크나이저는 어휘 6,400개일 때 11토큰, 16,000개일 때 9토큰으로 나눕니다. 그래서 16,000개 쪽이 유리할 거라고 예상했지만, 위키 문서를 최대 800자 길이의 조각으로 나누고 그중 10만 조각으로 학습했을 때는 어휘 6,400개 모델의 검증 BPB가 더 낮았습니다. 100만 조각에서는 순서가 뒤집혀 어휘 16,000개 모델의 검증 BPB가 근소하게 낮았고, 사전 규칙에 따라 16,000을 선택했습니다. 이 토크나이저로 위키 학습 풀 전체를 2 epoch 사전학습하고 대화 SFT까지 한 최종 모델이 실제로 어떻게 답하는지는 [최종 모델과 대화 예시](#-최종-모델과-대화-예시)에 있습니다.
 
 ![학습 조각 수에 따른 검증 BPB (vocab 6,400 / 16,000)](images/scale_bpb.png)
 
@@ -71,6 +71,38 @@ BPB(bits per byte)는 검증 글을 예측하는 데 든 UTF-8 바이트당 평�
 입력 임베딩과 출력층이 가중치를 공유(`tie_word_embeddings=True`)해서, vocab이 늘어난 만큼(9,600 × 768 ≈ 7.4M)만 파라미터가 늘어납니다.
 
 </details>
+
+---
+
+# 📌 최종 모델과 대화 예시
+
+선택한 vocab 16,000으로 위키 학습 풀 전체(1,183,370조각)를 패킹 없이 2 epoch 사전학습하고(약 16.4시간), 07번과 같은 대화 데이터(9,749쌍)로 SFT했습니다. 패킹과 2 epoch는 작은 실험으로 먼저 확인했고, 모든 채택 기준은 결과를 보기 전에 정했습니다. 자세한 내용은 [docs/08](docs/08_최종_사전학습과_SFT.md)에 있습니다.
+
+| 모델 | 위키 검증 BPB (↓) |
+|---|---|
+| 기존 16,000 · 100만 조각 × 1 epoch | 1.0080 |
+| **최종: 학습 풀 전체 × 2 epoch** | **0.9432** (Δ −0.0649, 95% 구간 [−0.0672, −0.0626] → 새 모델 채택) |
+
+SFT 뒤 대화 평가용 2,001쌍의 답 본문 BPB는 1.0958로, 기존 100만 모델 위에서 같은 조건으로 SFT한 모델(1.1134)보다 낮습니다(Δ −0.0176 [−0.0242, −0.0111]). 정답 답변을 예측하는 손실이 줄었다는 뜻이며, 대화를 더 잘한다는 판정은 아닙니다.
+
+아래는 최종 SFT 모델의 실제 답입니다. 질문 10개와 생성 설정은 답을 생성하기 전에 정해 커밋했고(bfe0a76), 답은 고르거나 고치지 않고 모두 실었습니다. 생성은 greedy(같은 질문에는 항상 같은 답), 새 토큰 상한 96입니다.
+
+| 유형 | 질문 | 모델의 답 |
+|---|---|---|
+| 평가용 대화 (학습에 안 씀) | 진짜 이제 한계야 | 진짜로 끝낼 수 있을 거예요. |
+| 평가용 대화 | 양심이 콕콕 | 아무래도 괜찮아요. |
+| 평가용 대화 | 나를 좋아한다는 사람한테 호감이 생길까요? | 그 사람도 좋아할 거예요. |
+| 평가용 대화 | 결국 또 꿈꿨네. | 꿈이 필요하죠. |
+| 평가용 대화 | 이제 헤어진지 1주일됐어 | 그런 날이 있나봐요. |
+| 일상 (직접 씀) | 오늘 비가 와서 그런지 기분이 좀 가라앉아 | 그런 날이 있나봐요. |
+| 위키 지식 (실패 예상) | 대한민국의 수도는 어디야? | 수도권 매립지에서는 매립지를 찾아보세요. |
+| 위키 지식 (실패 예상) | 세종대왕은 어떤 일을 했어? | 그럴 때가 있죠. |
+| 범위 밖: 번역 (실패 예상) | 다음 문장을 영어로 번역해 줘: 나는 학생이다 | 그게 내가 원하는 것일까요. |
+| 범위 밖: 계산 (실패 예상) | 123 더하기 456은 얼마야? | 그게 맞을 거예요. |
+
+![콘솔에서 scripts/chat_ko.py로 같은 10문항을 넣은 화면](images/chat_demo_console.png)
+
+짧은 일상·위로형 질문에는 자연스러운 한국어 문장으로 답하지만 질문에 꼭 맞지 않는 답이 많고, 위키 지식·번역·계산 질문에는 답하지 못합니다. 대화 데이터가 짧은 위로형 문답 9,749쌍뿐이고 모델이 71M 파라미터로 작기 때문으로 보입니다. 학습한 가중치는 공개하지 않아 위 답을 직접 재현할 수는 없습니다.
 
 ---
 
@@ -130,7 +162,7 @@ None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be ava
 | 3-1 | 더 적은 토큰을 쓰는 16,000이 더 잘 예측할까? (위키 10만 조각) | ✅ 예상과 반대로 6,400이 더 좋음 | [docs/05](docs/05_vocab_비교.md) |
 | 3-2 | 데이터를 늘리면 결과가 뒤집힐까? (5만 ~ 100만 조각) | ✅ 100만에서 16,000이 앞서 사전 규칙에 따라 16,000 선택 | [docs/06](docs/06_데이터양_비교.md) |
 | 3-3 | 같은 대화 데이터로 SFT해도 6,400이 더 나은 답을 낼까? | ✅ BPB는 6,400 근소 우세, 블라인드 생성 비교(LLM 평가자 1명)는 16,000 우세(62 대 41) → 사전 규칙에 따라 16,000 유지 | [docs/07](docs/07_대화_SFT_비교.md) |
-| 4 | 선택한 토크나이저로 최종 사전학습 후 한국어 대화 학습(SFT) | ⏳ 예정 | |
+| 4 | 선택한 토크나이저로 최종 사전학습 후 한국어 대화 학습(SFT) | ✅ 패킹은 채택 안 함, 2 epoch 채택 → 학습 풀 전체 × 2 epoch, 위키 검증 BPB 1.0080 → 0.9432. 대화 SFT와 README 대화 예시 | [docs/08](docs/08_최종_사전학습과_SFT.md) |
 | 5 | (선택) LoRA, DPO 체험 | ⏳ 예정 | |
 
 ---
@@ -176,6 +208,14 @@ scripts\run_scale.bat
 .venv\Scripts\python.exe -X utf8 scripts\plot_scale_bpb.py out_scale/decision.json images\scale_bpb.png ko
 .venv\Scripts\python.exe -X utf8 scripts\plot_scale_bpb.py out_scale/decision.json images\scale_bpb_en.png en
 
+REM Ⅳ 최종 사전학습과 SFT: 학습 풀 전체 파일 → 실험 1·2, 판정, 최종 학습, 채택 판정, SFT (docs/08)
+REM    run_final.bat도 별도 창에서 오래 돈다 (이 PC에서 실험 포함 학습 약 21시간). 끊기면 다시 실행하면 이어 간다
+.venv\Scripts\python.exe -X utf8 scripts\prepare_final_data.py
+scriptsun_final.bat
+.venv\Scripts\python.exe -X utf8 scriptsinal_demo.py select
+.venv\Scripts\python.exe -X utf8 scriptsinal_demo.py generate
+.venv\Scripts\python.exe -X utf8 scripts\chat_ko.py
+
 REM 단위 테스트 (데이터 분할, 판정, 실행기)
 .venv\Scripts\python.exe -X utf8 -m unittest discover tests -v
 ```
@@ -215,6 +255,13 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | [train_sft_ko.py](scripts/train_sft_ko.py) | `minimind_ko` | 원본 SFT 학습 루프를 재사용해 고정 대화 형식으로 한국어 모델 SFT (docs/07) |
 | [blind_chat_eval.py](scripts/blind_chat_eval.py) | `minimind_ko` | 블라인드 생성 비교: 문항 고정, 생성과 비교표, 채점과 판정 (docs/07) |
 | [eval_chat_bpb.py](scripts/eval_chat_bpb.py) | `minimind_ko` | 질문을 문맥으로 주고 답변만 채점한 BPB로 두 모델을 비교 (docs/06). `--format chat`이면 SFT와 같은 대화 형식 (docs/07) |
+| [packing.py](scripts/packing.py) | `minimind_ko` | 조각을 이어 512칸 줄로 자르는 패킹. `train_pretrain_ko.py --pack 1`에서 사용 (docs/08) |
+| [prepare_final_data.py](scripts/prepare_final_data.py) | `minimind_ko` | 위키 학습 풀 전체 파일을 만들고 앞 100만 줄 일치·검증 겹침 0 확인 (docs/08) |
+| [run_final.py](scripts/run_final.py) / [run_final.bat](scripts/run_final.bat) | `minimind_ko` | 최종 사전학습 실행기: 실험 1·2, 판정, 최종 학습, 채택 판정, SFT를 차례로 돌리고 끊기면 이어 감 (docs/08) |
+| [decide_final.py](scripts/decide_final.py) | `minimind_ko` | 패킹·epoch 판정, 최종 채택 판정, SFT 대화 평가 기록 (docs/08) |
+| [battery_guard.py](scripts/battery_guard.py) / [battery_guard.bat](scripts/battery_guard.bat) | `minimind_ko` | 노트북 배터리 지킴이: 사전학습 중 배터리 25% 이하면 실행기를 멈추고 90%에서 다시 띄움 (docs/08) |
+| [final_demo.py](scripts/final_demo.py) | `minimind_ko` | README 대화 예시: 질문 고정(답 생성 전), 생성과 200문항 자동 집계 (docs/08) |
+| [chat_ko.py](scripts/chat_ko.py) | `minimind_ko` | 콘솔에서 한국어 SFT 모델과 대화 (greedy) (docs/08) |
 
 </details>
 
@@ -227,6 +274,7 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 * 실행 환경: Windows 11, NVIDIA RTX 5050 Laptop (VRAM 8GB, Compute Capability 12.0), Python 3.11(uv), PyTorch 2.11.0 + CUDA 12.8, 원본 MiniMind 커밋 [`233d00f`](https://github.com/jingyaogong/minimind/commit/233d00fa068ec2b8c0d4f07b703934d6391a5a73) (2026-10-27). PC 사양과 설치 과정은 [docs/01](docs/01_환경구성.md)에 있습니다.
 * 노트북에서 학습이 갑자기 느려지면 `nvidia-smi -q -d POWER`로 GPU 전력 상한을 확인하세요. 이 PC는 Windows 전원 모드와 상관없이, 제조사 성능 모드가 아니면 GPU 전력이 21W로 묶였습니다 ([docs/04](docs/04_한국어_사전학습.md#겪은-문제)).
 * 학습 중 `CUDA error: out of memory`가 났는데 GPU 메모리에 여유가 있었다면 Windows 가상 메모리(커밋) 부족일 수 있습니다. 이 PC에서는 다른 프로그램을 많이 켜 둔 상태에서 vocab 16,000의 100만 조각 학습이 한 번 멈췄고(같은 시각 Windows 이벤트 로그에 가상 메모리 부족이 기록됨), 데이터 로더 작업 프로세스를 없애(`--num_workers 0`) 처음부터 다시 학습했습니다 ([docs/06](docs/06_데이터양_비교.md#실험-조건)).
+* 노트북은 충전기를 꽂아 두어도 GPU 학습 중에는 배터리가 줄 수 있습니다. 이 PC에서는 최종 사전학습 중 시간당 4~9%씩 줄어, 배터리 25% 이하에서 학습을 멈추고 충전 뒤 이어 가는 `scriptsattery_guard.bat`을 함께 띄웠습니다 ([docs/08](docs/08_최종_사전학습과_SFT.md#진행-중-있었던-일)).
 * 몇 시간씩 걸리는 학습 전에는 Windows 업데이트의 자동 다시 시작을 미뤄 두세요. 이 PC에서는 vocab 16,000의 100만 조각 학습 도중 업데이트 재시작으로 학습이 한 번 끊겼습니다. 끊겨도 `scripts\run_scale.bat`을 다시 실행하면 마지막 체크포인트(1,000 step마다 저장)에서 이어서 학습합니다 ([docs/06](docs/06_데이터양_비교.md#실험-조건)).
 
 | 학습 | 데이터 | 시간 (6,400 / 16,000) | GPU 메모리 (6,400 / 16,000) |
@@ -235,6 +283,7 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | 토크나이저 학습 ([docs/03](docs/03_한국어_토크나이저.md)) | 위키 20만 조각 | 각 약 50초 (CPU) | - |
 | 첫 비교 실험 ([docs/04](docs/04_한국어_사전학습.md), [05](docs/05_vocab_비교.md)) | 위키 10만 조각 | 약 35분 / 약 52분 ※ | 약 5,300MiB / 약 6,800MiB |
 | 데이터 양 실험 ([docs/06](docs/06_데이터양_비교.md)) | 위키 5만 / 10만 / 20만 / 40만 / 100만 조각 | 5만: 20분 / 21분<br>10만: 39분 / 43분<br>20만: 1.3시간 / 1.4시간<br>40만: 2.6시간 / 2.8시간<br>100만: 6.6시간 / 7.2시간 (끊긴 뒤 이어서 학습한 구간 합) | 약 5,300MiB / 약 6,800MiB (100만 학습 중 측정) |
+| 최종 사전학습과 SFT ([docs/08](docs/08_최종_사전학습과_SFT.md)) | 패킹 40만, 20만 × 2 epoch, 학습 풀 전체 118만 × 2 epoch, 대화 9,749쌍 (16,000만) | 패킹 실험 1.4시간, 2 epoch 실험 2.9시간, 최종 사전학습 16.4시간 (끊긴 뒤 이어서 학습한 구간 합), SFT 4분 | 측정 안 함 |
 
 * GPU 메모리는 학습 중 nvidia-smi로 본 GPU 전체 사용량입니다.
 * ※ 첫 비교 실험의 16,000 학습 시간은 도중에 GPU 전력 제한(21W)으로 느려진 구간이 섞인 참고치입니다. 두 학습이 모두 성능 모드였던 같은 구간의 step당 시간은 6,400 0.335초, 16,000 0.362초입니다 ([docs/05](docs/05_vocab_비교.md#실험-조건)).
@@ -252,9 +301,9 @@ loss 그래프 명령은 [docs/02](docs/02_사전학습_체험.md)와 [docs/05](
 | `minimind/dataset/pretrain_t2t_mini.jsonl` (원본 사전학습 데이터, 1.2GB) | `minimind` 폴더에서 `hf_hub_download('jingyaogong/minimind_dataset','pretrain_t2t_mini.jsonl',repo_type='dataset',local_dir='dataset')` ([docs/02](docs/02_사전학습_체험.md)) |
 | `data/kowiki.jsonl`, `data/raw/` (한국어 위키백과) | `scripts/prepare_kowiki.py` |
 | `data/kowiki_train_100k.jsonl`, `data/kowiki_heldout_2k.jsonl` | `scripts/make_subset.py` |
-| `data/scale/` (데이터 양 실험의 검증·학습 세트, 분할 확인 결과) | `scripts/prepare_scale_data.py` |
+| `data/scale/` (데이터 양 실험의 검증·학습 세트, 분할 확인 결과) | `scripts/prepare_scale_data.py`, 학습 풀 전체 파일은 `scripts/prepare_final_data.py` |
 | `data/tokenizer_sample.jsonl` | `scripts/train_tokenizer_ko.py` 첫 실행 시 자동 생성 |
-| `out*/`, `checkpoints/`, `*.pth` (학습 가중치, 데이터 양 실험 상태 파일) | 각 학습 명령, `scripts/run_scale.bat`을 다시 실행 |
+| `out*/`, `checkpoints/`, `*.pth` (학습 가중치, 실험 상태·판정 파일) | 각 학습 명령, `scripts/run_scale.bat`, `scripts/run_final.bat`을 다시 실행 |
 
 </details>
 
@@ -278,6 +327,8 @@ minimind_ko/
 ├── data/                  한국어 데이터                    (git 제외)
 ├── out_ko/                첫 비교 실험 가중치              (git 제외)
 ├── out_scale/             데이터 양 실험 가중치·상태 파일   (git 제외)
+├── out_sft/               대화 SFT 비교 가중치(07)          (git 제외)
+├── out_final/             최종 사전학습·SFT 가중치·판정(08) (git 제외)
 ├── minimind/              원본 저장소                      (git 제외)
 └── .venv/                 가상환경                         (git 제외)
 ```
@@ -295,7 +346,7 @@ minimind_ko/
 | 언어 | 중국어·영어 위주 | 한국어 전용 |
 | 토크나이저 | 원본 데이터로 학습한 vocab 6,400 | 한국어 위키백과로 직접 학습한 vocab 6,400 / 16,000 |
 | 학습 데이터 | 원본 저자가 공개한 데이터셋 | 한국어 위키백과 (직접 전처리) |
-| 진행 범위 | 사전학습부터 SFT, LoRA, DPO 등 전 과정 | 사전학습, vocab 비교, 비교용 대화 SFT까지 (최종 SFT 예정) |
+| 진행 범위 | 사전학습부터 SFT, LoRA, DPO 등 전 과정 | 사전학습, vocab 비교, 최종 사전학습과 대화 SFT까지 |
 
 원본에서 가져오거나 원본에 기대고 있는 것은 다음과 같습니다.
 

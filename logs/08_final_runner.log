@@ -1,0 +1,28 @@
+[2026-11-23T07:26:34] exp_pack400k 학습 시작: data/scale/train_400000.jsonl --pack 1
+[2026-11-23T08:53:14] exp_pack400k 완료 | per_doc.jsonl BPB 1.1763
+[2026-11-23T08:53:14] exp_ep2_200k 학습 시작: data/scale/train_200000.jsonl --epochs 2 --keep_epoch_weights 1
+[2026-11-23T08:53:21] 사용자 요청으로 실험 1 뒤 일시 정지 (실행기 중지). 이어서 하려면 run_final.bat 재실행
+[2026-11-23T08:54:40] exp_ep2_200k 학습 시작: data/scale/train_200000.jsonl --epochs 2 --keep_epoch_weights 1
+[2026-11-23T11:47:29] exp_ep2_200k 완료 | per_doc.jsonl BPB 1.1130, per_doc_epoch1.jsonl BPB 1.1947
+BPB: old_200k 1.2246, old_400k 1.1073, pack_400k 1.1763, ep2_200k 1.1130, ep2_200k_epoch1 1.1947
+패킹: Δp +0.0690 [+0.0669, +0.0715] → 채택 안 함 (기준: 상한 < +0.005)
+2 epoch: g +0.1116 [+0.1088, +0.1145], G 0.1172, g/G 0.952, 2 epoch 끝 1.1130 vs 1 epoch 끝 1.1947 → 채택 (기준: g/G ≥ 0.5, 하한 > 0, 2 epoch 끝 < 1 epoch 끝)
+최종 학습 설정: 패킹 안 함, 2 epoch
+저장: D:\minimind_ko\out_final\decision.json
+
+[2026-11-23T11:47:38] final 학습 시작: data/scale/train_1183370.jsonl --pack 0 --epochs 2 --keep_epoch_weights 1
+[2026-11-23T11:47:43] 사용자 요청으로 최종 학습 전 일시 정지 (실행기 중지). 이어서 하려면 run_final.bat 재실행
+[2026-11-23T12:51:48] final 학습 시작: data/scale/train_1183370.jsonl --pack 0 --epochs 2 --keep_epoch_weights 1
+[2026-11-23T23:46:31] final 학습 시작 (이어서): data/scale/train_1183370.jsonl --pack 0 --epochs 2 --keep_epoch_weights 1
+[2026-11-24T06:53:09] final 완료 | per_doc.jsonl BPB 0.9432, per_doc_epoch1.jsonl BPB 0.9963
+최종: BPB 새 모델 0.9432 vs 기존 100만 1.0080, Δf -0.0649 [-0.0672, -0.0626] → 새 모델 사용 (기준: 상한 < 0)
+참고(판정 아님): 1 epoch 끝 0.9963 → 2 epoch 끝 0.9432, 차이 -0.0532 [-0.0549, -0.0517]
+저장: D:\minimind_ko\out_final\decision.json
+
+[2026-11-24T06:53:17] 최종 SFT 시작
+  tokenizers/ko_16000: 2001쌍, 21s, 가장 긴 입력 53토큰
+최종 SFT 답 본문 BPB 1.0958 vs 07번 16,000 SFT 1.1134, Δ -0.0176 [-0.0242, -0.0111] (기록용, 판정 아님)
+답 끝 eos 손실(답 하나당 평균, nats) 0.1115 vs 0.1081, Δ(비트) +0.0049 [-0.0130, +0.0258] (기록용, 판정 아님)
+저장: D:\minimind_ko\out_final\decision.json
+
+[2026-11-24T06:57:47] 전체 완료. 판정 기록: out_final\decision.json
